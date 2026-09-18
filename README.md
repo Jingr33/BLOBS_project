@@ -16,10 +16,10 @@
 * **Frontend technology:** <!-- if applicable -->
 * **Backend technology:** <!-- if applicable -->
 * **Database:** <!-- if applicable -->
-* **Package manager:** uvicorn
+* **Package manager:** uv
 * **Build tool:** <!-- if applicable -->
 * **Testing framework:** <!-- e.g. -->
-* **Containerization:** Docker
+* **Containerization:** <!--TBD / Optional -->
 * **CI/CD:** GitHub Actions
 * **Version control:** Git
 * **Repository hosting:** GitHub
