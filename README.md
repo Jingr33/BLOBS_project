@@ -80,7 +80,7 @@ uv sync
 ### Development
 
 ```bash
-# command
+uv run python -m blobs_project
 ```
 
 ### Production
@@ -108,7 +108,7 @@ uv sync
 ### Run Tests
 
 ```bash
-# command
+uv run -m pytest
 ```
 
 ### Test Structure
