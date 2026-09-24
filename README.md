@@ -10,16 +10,14 @@
 
 ### Expected Tech Stack
 
-* **Programming language:** Python >= 3.10
+* **Programming language:** Python >= 3.13
 * **Runtime / SDK:** <!-- e.g. -->
 * **Framework:** <!-- e.g. -->
-* **Frontend technology:** <!-- if applicable -->
+* **Frontend technology:** PyQt6
 * **Backend technology:** <!-- if applicable -->
-* **Database:** <!-- if applicable -->
-* **Package manager:** uvicorn
+* **Package manager:** uv
 * **Build tool:** <!-- if applicable -->
 * **Testing framework:** <!-- e.g. -->
-* **Containerization:** Docker
 * **CI/CD:** GitHub Actions
 * **Version control:** Git
 * **Repository hosting:** GitHub
@@ -80,7 +78,7 @@ uv sync
 ### Development
 
 ```bash
-# command
+uv run python -m blobs_project
 ```
 
 ### Production
@@ -108,7 +106,7 @@ uv sync
 ### Run Tests
 
 ```bash
-# command
+uv run -m pytest
 ```
 
 ### Test Structure
