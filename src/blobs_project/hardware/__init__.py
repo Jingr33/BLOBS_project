@@ -1,5 +1,5 @@
-from .i_daq import DAQ
-from .ni_daq import NIDAQ
-from .mock_daq import MockDAQ
+from .DAQ_base import DAQ_base
+from .MockDAQ import MockDAQ
+from .NIDAQ import NIDAQ
 
-__all__ = ["DAQ", "NIDAQ", "MockDAQ"]
+__all__ = ["DAQ_base", "NIDAQ", "MockDAQ"]

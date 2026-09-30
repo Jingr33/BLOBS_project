@@ -1,12 +1,12 @@
 """
 Interface for Data Aquisition Devices. This inteface can be useful
-to create MockDAQ(DAQ) for tests.
+to create MockDAQ(DAQ_base) for tests.
 """
 
 from abc import ABC, abstractmethod
 
 
-class DAQ(ABC):
+class DAQ_base(ABC):
     @abstractmethod
     def read_voltage(self, channel: str) -> float:
         pass

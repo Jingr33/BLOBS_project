@@ -1,7 +1,7 @@
-from .i_daq import DAQ
+from .DAQ_base import DAQ_base
 
 
-class MockDAQ(DAQ):
+class MockDAQ(DAQ_base):
     def __init__(self) -> None:
         self._analog_inputs: dict[str, float] = {}
         self._analog_outputs: dict[str, float] = {}
@@ -22,7 +22,7 @@ class MockDAQ(DAQ):
         return True
 
     def write_digital(self, channel: str, value: bool) -> None:
-        ...
+        pass
 
     def close(self) -> None:
-        ...
+        pass
