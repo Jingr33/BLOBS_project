@@ -1,3 +1,3 @@
-from .app import Application
+from .frontend import Application
 
 __all__ = ["Application"]

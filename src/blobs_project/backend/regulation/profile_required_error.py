@@ -1,0 +1,2 @@
+class ProfileRequiredError(RuntimeError):
+    pass
