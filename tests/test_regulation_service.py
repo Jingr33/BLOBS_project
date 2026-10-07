@@ -2,11 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from blobs_project import configuration as config
+from blobs_project import config
 from blobs_project.backend.regulation import (
     ProfileLoader,
     ProfileRequiredError,
     RegulationService,
+    SampleExportStatus,
 )
 
 
@@ -143,3 +144,55 @@ def test_desired_trend_points_track_the_setpoint() -> None:
     assert [time_s for time_s, _ in desired] == [time_s for time_s, _ in actual]
     assert desired[0][1] == pytest.approx(25.0)
     assert desired[-1][1] == pytest.approx(18.0)
+
+
+def test_import_profile_loads_and_stores_the_profile(tmp_path: Path) -> None:
+    path = tmp_path / "profile.csv"
+    path.write_text("20.0\n21.0\n", encoding="utf-8")
+    service = RegulationService()
+
+    loaded = service.import_profile(path)
+
+    assert loaded is not None
+    assert loaded.row_count == 2
+    assert service.profile is loaded
+
+
+def test_import_profile_reports_an_invalid_file(tmp_path: Path) -> None:
+    path = tmp_path / "broken.csv"
+    path.write_text("not-a-number\n", encoding="utf-8")
+    service = RegulationService()
+
+    assert service.import_profile(path) is None
+    assert service.profile is None
+
+
+def test_export_samples_writes_the_recorded_samples(tmp_path: Path) -> None:
+    service = RegulationService()
+    service.toggle_regulation()
+    for _ in range(25):
+        service.tick(0.1)
+    path = tmp_path / "samples.csv"
+
+    assert service.export_samples(path) is SampleExportStatus.WRITTEN
+    header = path.read_text(encoding="utf-8").splitlines()[0]
+    assert header == "time_s,tank2_actual_cm"
+
+
+def test_export_samples_without_samples_reports_an_empty_log(tmp_path: Path) -> None:
+    service = RegulationService()
+
+    assert (
+        service.export_samples(tmp_path / "samples.csv")
+        is SampleExportStatus.NO_SAMPLES
+    )
+
+
+def test_export_samples_reports_a_file_error(tmp_path: Path) -> None:
+    service = RegulationService()
+    service.toggle_regulation()
+    for _ in range(25):
+        service.tick(0.1)
+    unwritable = tmp_path / "missing-directory" / "samples.csv"
+
+    assert service.export_samples(unwritable) is SampleExportStatus.FAILED

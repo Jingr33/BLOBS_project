@@ -1,4 +1,4 @@
-from .controllers import ProportionalController, RegulationController
+from .controllers import ProportionalController, RegulationControllerBase
 from .profile_required_error import ProfileRequiredError
 from .regulation_process_loader import (
     CsvExporter,
@@ -7,6 +7,7 @@ from .regulation_process_loader import (
     ProfileLoader,
 )
 from .regulation_service import RegulationService
+from .sample_export_status import SampleExportStatus
 from .sample_log import Sample, SampleLog
 
 __all__ = [
@@ -16,8 +17,9 @@ __all__ = [
     "ProportionalController",
     "ProfileRequiredError",
     "ProfileLoader",
-    "RegulationController",
+    "RegulationControllerBase",
     "RegulationService",
     "Sample",
+    "SampleExportStatus",
     "SampleLog",
 ]

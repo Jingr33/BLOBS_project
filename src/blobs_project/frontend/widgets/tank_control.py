@@ -3,8 +3,8 @@ from __future__ import annotations
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QDoubleSpinBox, QFrame, QGridLayout, QLabel
 
-from ... import configuration as config
-from ...translations import tr
+from blobs_project import config
+from blobs_project.translations import tr
 
 
 class TankControl(QFrame):

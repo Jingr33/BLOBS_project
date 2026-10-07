@@ -9,9 +9,10 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from ...translations import tr
-from ..widgets.tank_diagram import TankDiagram
-from ..widgets.trend_preview import TrendPreview
+from blobs_project.frontend.helpers.qt_helper import QtHelper
+from blobs_project.frontend.widgets.tank_diagram import TankDiagram
+from blobs_project.frontend.widgets.trend_preview import TrendPreview
+from blobs_project.translations import tr
 
 
 class VisualizationFrame(QFrame):
@@ -69,11 +70,9 @@ class VisualizationFrame(QFrame):
     def _select_page(self, index: int) -> None:
         self._stack.setCurrentIndex(index)
         for button_index, button in enumerate(self._nav_buttons):
-            button.setObjectName("navActive" if button_index == index else "nav")
-            style = button.style()
-            if style is not None:
-                style.unpolish(button)
-                style.polish(button)
+            QtHelper.set_style_name(
+                button, "navActive" if button_index == index else "nav"
+            )
 
     @property
     def current_page(self) -> int:

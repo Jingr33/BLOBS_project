@@ -4,8 +4,9 @@ from PyQt6.QtCore import QPointF, QRectF, Qt
 from PyQt6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPen, QPolygonF
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
-from ... import configuration as config
-from ...translations import tr
+from blobs_project import config
+from blobs_project.translations import tr
+
 from .tank_geometry import TankGeometry
 
 ARROW_HALF_WIDTH: float = 8.0

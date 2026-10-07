@@ -1,10 +1,14 @@
 import pytest
 
-from blobs_project import configuration as config
-from blobs_project.backend.regulation import ProportionalController, RegulationService
+from blobs_project import config
+from blobs_project.backend.regulation import (
+    ProportionalController,
+    RegulationControllerBase,
+    RegulationService,
+)
 
 
-class _RecordingController:
+class _RecordingController(RegulationControllerBase):
     def __init__(self) -> None:
         self.calls: list[tuple[float, float, float]] = []
         self.reset_count = 0

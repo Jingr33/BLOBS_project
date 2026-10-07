@@ -2,14 +2,15 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
-from ... import configuration as config
-from ...translations import tr
-from ..actions import (
+from blobs_project import config
+from blobs_project.frontend.actions import (
     ActionId,
     ActionPlace,
     visible_actions,
 )
-from ..assets import LOGO_PATH
+from blobs_project.frontend.assets import LOGO_PATH
+from blobs_project.frontend.helpers.qt_helper import QtHelper
+from blobs_project.translations import tr
 
 
 class HeaderFrame(QFrame):
@@ -27,8 +28,8 @@ class HeaderFrame(QFrame):
         layout.addWidget(self._logo_label())
         title_box = QVBoxLayout()
         title_box.setSpacing(1)
-        title_box.addWidget(self._label(tr("header.eyebrow"), "eyebrow"))
-        title_box.addWidget(self._label(tr("header.title"), "title"))
+        title_box.addWidget(QtHelper.make_label(tr("header.eyebrow"), "eyebrow"))
+        title_box.addWidget(QtHelper.make_label(tr("header.title"), "title"))
         title_box.setContentsMargins(30, 0, 0, 0)
         layout.addLayout(title_box)
         layout.addStretch()
@@ -75,9 +76,3 @@ class HeaderFrame(QFrame):
 
     def _emit_status(self, text: str) -> None:
         self.status_changed.emit(text)
-
-    @staticmethod
-    def _label(text: str, object_name: str) -> QLabel:
-        label = QLabel(text)
-        label.setObjectName(object_name)
-        return label

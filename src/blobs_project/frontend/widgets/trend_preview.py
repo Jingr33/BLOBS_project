@@ -7,8 +7,8 @@ from PyQt6.QtCore import QPointF, QRectF, Qt
 from PyQt6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
-from ... import configuration as config
-from ...translations import tr
+from blobs_project import config
+from blobs_project.translations import tr
 
 PLOT_LEFT_MARGIN: float = 46.0
 PLOT_TOP_MARGIN: float = 20.0

@@ -1,19 +1,28 @@
 from __future__ import annotations
 
-from ... import configuration as config
-from ..timekeeping import Stopwatch
-from .controllers import ProportionalController, RegulationController
+from pathlib import Path
+
+from blobs_project import config
+from blobs_project.backend.timekeeping import Stopwatch
+
+from .controllers import ProportionalController, RegulationControllerBase
 from .profile_required_error import ProfileRequiredError
-from .regulation_process_loader import CsvProfile
+from .regulation_process_loader import (
+    CsvExporter,
+    CsvProfile,
+    CsvProfileError,
+    ProfileLoader,
+)
+from .sample_export_status import SampleExportStatus
 from .sample_log import SampleLog
 
 
 class RegulationService:
-    def __init__(self, controller: RegulationController | None = None) -> None:
+    def __init__(self, controller: RegulationControllerBase | None = None) -> None:
         self._profile: CsvProfile | None = None
         self._sample_log = SampleLog()
         self._stopwatch = Stopwatch(config.PROFILE_SAMPLE_INTERVAL_S)
-        self._controller: RegulationController = (
+        self._controller: RegulationControllerBase = (
             controller if controller is not None else ProportionalController()
         )
         self._regulation_active = False
@@ -78,6 +87,23 @@ class RegulationService:
 
     def set_profile(self, profile: CsvProfile | None) -> None:
         self._profile = profile
+
+    def import_profile(self, path: str | Path) -> CsvProfile | None:
+        try:
+            profile = ProfileLoader.load_profile(path)
+        except CsvProfileError:
+            return None
+        self._profile = profile
+        return profile
+
+    def export_samples(self, path: str | Path) -> SampleExportStatus:
+        try:
+            exported = CsvExporter.export_samples_csv(self._sample_log.samples, path)
+        except OSError:
+            return SampleExportStatus.FAILED
+        if not exported:
+            return SampleExportStatus.NO_SAMPLES
+        return SampleExportStatus.WRITTEN
 
     def toggle_regulation(self) -> None:
         if self._regulation_active:

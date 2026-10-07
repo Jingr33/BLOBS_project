@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from .... import configuration as config
+from blobs_project import config
+
+from .regulation_controller_base import RegulationControllerBase
 
 
-class ProportionalController:
+class ProportionalController(RegulationControllerBase):
     def __init__(self, gain: float = config.LEVEL_RESPONSE_RATE) -> None:
         self._gain = gain
 

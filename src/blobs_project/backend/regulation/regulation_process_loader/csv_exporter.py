@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
-from ..sample_log import Sample
+from blobs_project.backend.regulation.sample_log import Sample
 
 
 class CsvExporter:

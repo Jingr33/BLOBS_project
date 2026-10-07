@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
-from ... import configuration as config
-from ...translations import tr
+from blobs_project import config
+from blobs_project.translations import tr
 
 
 class FooterFrame(QFrame):

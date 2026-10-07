@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 
-from ... import configuration as config
+from blobs_project import config
 
 
 @dataclass(frozen=True)
@@ -14,8 +15,7 @@ class Sample:
 
 class SampleLog:
     def __init__(self, limit: int = config.SAMPLE_LOG_LIMIT) -> None:
-        self._limit = limit
-        self._samples: list[Sample] = []
+        self._samples: deque[Sample] = deque(maxlen=limit)
 
     def append(
         self,
@@ -24,8 +24,6 @@ class SampleLog:
         tank2_actual_cm: float,
     ) -> None:
         self._samples.append(Sample(time_s, tank2_desired_cm, tank2_actual_cm))
-        if len(self._samples) > self._limit:
-            del self._samples[0]
 
     def clear(self) -> None:
         self._samples.clear()

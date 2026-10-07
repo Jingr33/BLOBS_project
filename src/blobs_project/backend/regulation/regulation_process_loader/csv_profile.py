@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .... import configuration as config
+from blobs_project import config
+
 from .csv_profile_error import CsvProfileError
 
 

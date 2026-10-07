@@ -1,9 +1,10 @@
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 
-from .. import configuration as config
-from ..backend.regulation import RegulationService
-from ..translations import tr
+from blobs_project import config
+from blobs_project.backend.regulation import RegulationService
+from blobs_project.translations import tr
+
 from .frames.footer_frame import FooterFrame
 from .frames.header_frame import HeaderFrame
 from .frames.regulation_frame import RegulationFrame
@@ -11,9 +12,9 @@ from .frames.visualization_frame import VisualizationFrame
 
 
 class MainWindow(QMainWindow):
-    def __init__(self) -> None:
+    def __init__(self, service: RegulationService) -> None:
         super().__init__()
-        self._service = RegulationService()
+        self._service = service
         self._previous_state: tuple[bool, bool] = (False, False)
         self.setWindowTitle(tr("window.title"))
         self.setMinimumSize(config.WINDOW_MINIMUM_WIDTH, config.WINDOW_MINIMUM_HEIGHT)
