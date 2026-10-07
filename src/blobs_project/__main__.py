@@ -1,8 +1,9 @@
 from . import Application
+from .backend.regulation import RegulationService
 
 
 def main() -> None:
-    Application.run()
+    Application.run(RegulationService())
 
 
 if __name__ == "__main__":

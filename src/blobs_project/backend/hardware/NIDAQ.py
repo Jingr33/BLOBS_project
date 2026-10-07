@@ -1,19 +1,21 @@
-import nidaqmx
-from nidaqmx.constants import TerminalConfiguration
-
 from .DAQ_base import DAQ_base
 
 
 class NIDAQ(DAQ_base):
     def __init__(self, device_name: str = "Dev1") -> None:
+        import nidaqmx
+        from nidaqmx.constants import TerminalConfiguration
+
+        self._nidaqmx = nidaqmx
+        self._terminal_configuration = TerminalConfiguration.RSE
         self.device_name = device_name
 
     def read_voltage(self, channel: str) -> float:
         physical_channel = f"{self.device_name}/{channel}"
-        with nidaqmx.Task() as task:
+        with self._nidaqmx.Task() as task:
             task.ai_channels.add_ai_voltage_chan(
                 physical_channel,
-                terminal_config=TerminalConfiguration.RSE,
+                terminal_config=self._terminal_configuration,
                 min_val=-10.0,
                 max_val=10.0,
             )
@@ -23,7 +25,7 @@ class NIDAQ(DAQ_base):
         if not -10.0 <= value <= 10.0:
             raise ValueError("Voltage must be between -10 V and +10 V")
         physical_channel = f"{self.device_name}/{channel}"
-        with nidaqmx.Task() as task:
+        with self._nidaqmx.Task() as task:
             task.ao_channels.add_ao_voltage_chan(
                 physical_channel, min_val=-10.0, max_val=10.0
             )

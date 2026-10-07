@@ -1,4 +1,4 @@
-from blobs_project.hardware import MockDAQ
+from blobs_project.backend.hardware import MockDAQ
 
 
 def test_mock_daq_reads_voltage() -> None:
