@@ -14,34 +14,41 @@ on:
 
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' 
+    if: github.event_name == 'workflow_dispatch'
       || github.event.pull_request.merged == true
 
     runs-on: windows-latest
 
     permissions:
-      contents: write   # needed if you attach the exe to a release
+      contents: write
 
     steps:
       - name: Checkout code
-        uses: astral-sh/setup-uv@v7
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' 
-            && github.event.inputs.ref 
+          ref: ${{ github.event_name == 'workflow_dispatch'
+            && github.event.inputs.ref
             || github.event.pull_request.merge_commit_sha }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version-file: pyproject.toml
-          
+
       - name: Install dependencies
         run: uv sync --locked
-        
+
       - name: Build EXE with PyInstaller
-        run: uv run pyinstaller --noconfirm --clean --onefile --windowed 
-          --name Blobs --paths src 
-          --collect-data blobs_project src/blobs_project/__main__.py
+        run: |
+          uv run --with pyinstaller `
+            pyinstaller `
+            --noconfirm --clean --onefile --console `
+            --name Blobs `
+            --collect-all nidaqmx `
+            main.py
 
       - name: Upload EXE as artifact
         uses: actions/upload-artifact@v4
