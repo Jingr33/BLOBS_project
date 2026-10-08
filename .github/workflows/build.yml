@@ -53,7 +53,7 @@ jobs:
       - name: Upload EXE as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: exe-${{ github.sha }}
+          name: blobs-app-${{ github.sha }}
           path: dist/Blobs.exe
           if-no-files-found: error
           retention-days: 20
