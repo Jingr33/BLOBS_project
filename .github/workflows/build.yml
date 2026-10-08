@@ -1,0 +1,59 @@
+name: Build Windows EXE
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (branch, tag, or SHA) to build'
+        required: false
+        default: 'main'
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch'
+      || github.event.pull_request.merged == true
+
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch'
+            && github.event.inputs.ref
+            || github.event.pull_request.merge_commit_sha }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: pyproject.toml
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Build EXE with PyInstaller
+        run: |
+          uv run --with pyinstaller `
+            pyinstaller `
+            --noconfirm --clean --onefile --console `
+            --name Blobs `
+            --collect-all nidaqmx `
+            main.py
+
+      - name: Upload EXE as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exe-${{ github.sha }}
+          path: dist/Blobs.exe
+          if-no-files-found: error
+          retention-days: 20

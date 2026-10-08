@@ -9,6 +9,9 @@ dependencies = [
     "pyqt6>=6.11.0",
 ]
 
+[project.scripts]
+blobs = "blobs_project.__main__:main"
+
 [dependency-groups]
 dev = [
     "mypy>=1.10.0",
