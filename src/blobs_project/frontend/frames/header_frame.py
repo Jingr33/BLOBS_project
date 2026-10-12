@@ -3,19 +3,14 @@ from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from blobs_project import config
-from blobs_project.frontend.actions import (
-    ActionId,
-    ActionPlace,
-    visible_actions,
-)
+from blobs_project.frontend.actions import ActionPlace, visible_actions
 from blobs_project.frontend.assets import LOGO_PATH
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.translations import tr
 
 
 class HeaderFrame(QFrame):
-    status_changed = pyqtSignal(str)
-    force_reset_requested = pyqtSignal()
+    action_requested = pyqtSignal(object)
 
     def __init__(self) -> None:
         super().__init__()
@@ -37,21 +32,14 @@ class HeaderFrame(QFrame):
 
     def _add_actions(self, layout: QHBoxLayout) -> None:
         for action_id in visible_actions(ActionPlace.TOOLBAR):
-            button = QPushButton(self._action_label(action_id))
+            button = QPushButton(tr(f"action.{action_id.value}"))
             button.setObjectName("small")
             button.clicked.connect(
-                lambda _checked=False, action_id=action_id: self._handle_action(
+                lambda _checked=False, action_id=action_id: self.action_requested.emit(
                     action_id
                 )
             )
             layout.addWidget(button)
-
-    def _handle_action(self, action_id: ActionId) -> None:
-        if action_id is ActionId.FORCE_RESET:
-            self.force_reset_requested.emit()
-            self._emit_status(tr("status.force_reset"))
-            return
-        self._emit_status(self._action_status(action_id))
 
     @staticmethod
     def _logo_label() -> QLabel:
@@ -65,14 +53,3 @@ class HeaderFrame(QFrame):
                 )
             )
         return label
-
-    @staticmethod
-    def _action_label(action_id: ActionId) -> str:
-        return tr(f"action.{action_id.value}")
-
-    @classmethod
-    def _action_status(cls, action_id: ActionId) -> str:
-        return tr("status.action_selected", label=cls._action_label(action_id))
-
-    def _emit_status(self, text: str) -> None:
-        self.status_changed.emit(text)

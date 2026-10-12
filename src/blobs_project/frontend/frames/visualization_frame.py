@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from blobs_project.backend.dtos.regulation_values import RegulationValues
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.frontend.widgets.tank_diagram import TankDiagram
 from blobs_project.frontend.widgets.trend_preview import TrendPreview
@@ -35,10 +36,8 @@ class VisualizationFrame(QFrame):
         self._add_page(self._trend_preview)
         self._select_page(0)
 
-    def update_process_data(
-        self, tank2_actual_cm: float, tank2_desired_cm: float
-    ) -> None:
-        self._tank_diagram.set_process_data(tank2_actual_cm, tank2_desired_cm)
+    def update_process_data(self, regulation_values: RegulationValues) -> None:
+        self._tank_diagram.set_process_data(regulation_values)
 
     def update_trend_samples(
         self,

@@ -20,7 +20,6 @@ def test_translation_returns_string_for_known_key() -> None:
 
 
 def test_translation_formats_placeholders() -> None:
-    assert tr("status.action_selected", label="Restart") == "Restart selected"
     assert (
         tr("status.profile_loaded", rows=120, duration=120.0)
         == "Profile loaded (120 rows / 120 s)"

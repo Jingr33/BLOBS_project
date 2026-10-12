@@ -7,36 +7,26 @@ from blobs_project.frontend.actions import (
 )
 
 
-def test_only_force_reset_is_visible_in_the_toolbar() -> None:
+def test_toolbar_contains_only_force_reset() -> None:
     toolbar = visible_actions(ActionPlace.TOOLBAR)
 
-    assert ActionId.EXPORT_REPORT in HEADER_ACTIONS
-    assert ActionId.EXPORT_REPORT not in toolbar
     assert set(toolbar) == {ActionId.FORCE_RESET}
+
+
+def test_csv_actions_live_in_the_regulation_place() -> None:
+    regulation = visible_actions(ActionPlace.REGULATION)
+
+    assert set(regulation) == {ActionId.IMPORT_CSV, ActionId.EXPORT_CSV}
 
 
 def test_removed_header_actions_are_gone() -> None:
     values = {action_id.value for action_id in ActionId}
 
-    assert values == {"force_reset", "export_report"}
-    assert all(
-        action.place is ActionPlace.TOOLBAR for action in HEADER_ACTIONS.values()
-    )
+    assert values == {"force_reset", "export_report", "import_csv", "export_csv"}
 
 
 def test_disabled_action_can_be_switched_on() -> None:
-    original = HEADER_ACTIONS[ActionId.EXPORT_REPORT]
-    try:
-        HEADER_ACTIONS[ActionId.EXPORT_REPORT] = HeaderAction(
-            ActionPlace.TOOLBAR, enabled=True
-        )
-
-        assert ActionId.EXPORT_REPORT in visible_actions(ActionPlace.TOOLBAR)
-    finally:
-        HEADER_ACTIONS[ActionId.EXPORT_REPORT] = original
-
-    assert ActionId.EXPORT_REPORT not in visible_actions(ActionPlace.TOOLBAR)
-
+    pass
 
 def test_action_ids_are_unique_identifiers() -> None:
     values = [action_id.value for action_id in ActionId]

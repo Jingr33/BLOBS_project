@@ -5,6 +5,7 @@ from PyQt6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPen, QPolygonF
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
 from blobs_project import config
+from blobs_project.backend.dtos.regulation_values import RegulationValues
 from blobs_project.translations import tr
 
 from .tank_geometry import TankGeometry
@@ -24,9 +25,9 @@ class TankDiagram(QWidget):
         self._tank2_actual_cm = config.TANK_ACTUAL_LEVEL_CM
         self._tank2_desired_cm = config.TANK_DESIRED_LEVEL_CM
 
-    def set_process_data(self, tank2_actual_cm: float, tank2_desired_cm: float) -> None:
-        self._tank2_actual_cm = tank2_actual_cm
-        self._tank2_desired_cm = tank2_desired_cm
+    def set_process_data(self, regulation_values: RegulationValues) -> None:
+        self._tank2_actual_cm = regulation_values.tank2_actual_cm
+        self._tank2_desired_cm = regulation_values.tank2_desired_cm
         self.update()
 
     def paintEvent(self, _event: object) -> None:

@@ -8,6 +8,7 @@ from PyQt6.QtCore import QCoreApplication
 from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton
 
 from blobs_project import Application
+from blobs_project.backend.csv_management import CsvService
 from blobs_project.backend.regulation import RegulationService
 from blobs_project.frontend.frames import (
     FooterFrame,
@@ -33,7 +34,7 @@ def _wait_until(condition: Callable[[], bool], timeout: float = 3.0) -> bool:
 def test_application_creates_monitoring_window() -> None:
     app = QApplication.instance() or QApplication([])
 
-    window = Application.create_window(RegulationService())
+    window = Application.create_window(RegulationService(), CsvService())
 
     assert window.windowTitle() == "BLOBS // Process Control"
     assert window.minimumSize().width() == 1040
@@ -44,7 +45,7 @@ def test_application_creates_monitoring_window() -> None:
 def test_main_window_composes_separate_frames() -> None:
     app = QApplication.instance() or QApplication([])
 
-    window = Application.create_window(RegulationService())
+    window = Application.create_window(RegulationService(), CsvService())
 
     assert window.findChild(HeaderFrame) is not None
     assert window.findChild(RegulationFrame) is not None
@@ -57,7 +58,7 @@ def test_main_window_composes_separate_frames() -> None:
 def test_header_shows_only_the_force_reset_action() -> None:
     app = QApplication.instance() or QApplication([])
 
-    window = Application.create_window(RegulationService())
+    window = Application.create_window(RegulationService(), CsvService())
     header = window.findChild(HeaderFrame)
     assert header is not None
 
@@ -72,7 +73,7 @@ def test_header_shows_only_the_force_reset_action() -> None:
 def test_visualization_frame_switches_between_pages() -> None:
     app = QApplication.instance() or QApplication([])
 
-    window = Application.create_window(RegulationService())
+    window = Application.create_window(RegulationService(), CsvService())
     frame = window.findChild(VisualizationFrame)
     assert frame is not None
 
@@ -92,7 +93,7 @@ def test_visualization_frame_switches_between_pages() -> None:
 def test_header_displays_the_blobs_logo() -> None:
     app = QApplication.instance() or QApplication([])
 
-    window = Application.create_window(RegulationService())
+    window = Application.create_window(RegulationService(), CsvService())
     header = window.findChild(HeaderFrame)
     assert header is not None
 
@@ -108,7 +109,7 @@ def test_header_displays_the_blobs_logo() -> None:
 def test_regulation_frame_offers_regulation_and_csv_actions() -> None:
     app = QApplication.instance() or QApplication([])
 
-    window = Application.create_window(RegulationService())
+    window = Application.create_window(RegulationService(), CsvService())
     frame = window.findChild(RegulationFrame)
     assert frame is not None
 
@@ -128,7 +129,7 @@ def test_regulation_frame_offers_regulation_and_csv_actions() -> None:
 def test_import_and_export_buttons_share_one_row() -> None:
     app = QApplication.instance() or QApplication([])
 
-    window = Application.create_window(RegulationService())
+    window = Application.create_window(RegulationService(), CsvService())
     window.show()
     app.processEvents()
     frame = window.findChild(RegulationFrame)
@@ -148,7 +149,7 @@ def test_import_and_export_buttons_share_one_row() -> None:
 def test_regulation_toggle_switches_between_start_and_stop() -> None:
     app = QApplication.instance() or QApplication([])
 
-    window = Application.create_window(RegulationService())
+    window = Application.create_window(RegulationService(), CsvService())
     frame = window.findChild(RegulationFrame)
     assert frame is not None
 
@@ -185,7 +186,7 @@ def _window_parts() -> tuple[
     TrendPreview,
 ]:
     app = QApplication.instance() or QApplication([])
-    window = Application.create_window(RegulationService())
+    window = Application.create_window(RegulationService(), CsvService())
     window.show()
     app.processEvents()
     header = window.findChild(HeaderFrame)

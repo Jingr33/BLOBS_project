@@ -3,4 +3,5 @@ from enum import Enum
 
 class ActionId(Enum):
     FORCE_RESET = "force_reset"
-    EXPORT_REPORT = "export_report"
+    IMPORT_CSV = "import_csv"
+    EXPORT_CSV = "export_csv"
