@@ -58,6 +58,21 @@ LEVEL_RESPONSE_RATE: Final = 0.6
 
 PROFILE_DURATION_S: Final = 120.0
 PROFILE_SAMPLE_INTERVAL_S: Final = 1.0
+
+# NI DAQ / tower hardware
+# NI-DAQmx device name of the USB-6001 card. Used in: backend/hardware/NIDAQ.py
+DAQ_DEVICE_NAME: Final = "Dev1"
+# Lower-tank level sensor input. Used in: backend/hardware/tower.py
+TOWER_LEVEL_CHANNEL: Final = "ai0"
+# Pump driver output. Used in: backend/hardware/tower.py
+TOWER_PUMP_CHANNEL: Final = "ao1"
+# Level sensor gain, TMDG 338 Z3H 0-3 kPa -> 0-10 V. Used in: backend/hardware/tower.py
+TOWER_LEVEL_CM_PER_V: Final = 3.06
+# Sensor voltage of an empty tank; drifts, re-tare before use.
+# Used in: backend/hardware/tower.py
+TOWER_LEVEL_ZERO_V: Final = 0.255
+# Pump cap; above it the upper tank overflows. Used in: backend/hardware/tower.py
+TOWER_PUMP_MAX_V: Final = 7.5
 SAMPLE_LOG_LIMIT: Final = 5000
 
 # componenet styles
