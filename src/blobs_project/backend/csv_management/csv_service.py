@@ -15,7 +15,7 @@ from blobs_project.backend.regulation import (
 
 
 class CsvService:
-    PROFILE_TEMPLATE_HEADER: Final = "test content" # temporary string
+    PROFILE_TEMPLATE_HEADER: Final = "test content"  # temporary string
 
     def load_profile(self, path: str | Path) -> CsvProfile | None:
         try:

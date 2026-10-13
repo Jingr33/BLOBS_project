@@ -67,9 +67,9 @@ def test_save_template_writes_the_profile_header(tmp_path: Path) -> None:
     path = tmp_path / "template.csv"
 
     assert csv_service.save_template(path)
-    assert path.read_text(encoding="utf-8") == "tank2_desired_cm\n"
+    assert path.read_text(encoding="utf-8") == f"{CsvService.PROFILE_TEMPLATE_HEADER}\n"
 
-    path.write_text("tank2_desired_cm\n20.0\n", encoding="utf-8")
+    path.write_text(f"{CsvService.PROFILE_TEMPLATE_HEADER}\n20.0\n", encoding="utf-8")
     profile = csv_service.load_profile(path)
 
     assert profile is not None

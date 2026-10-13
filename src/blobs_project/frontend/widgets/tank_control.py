@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QDoubleSpinBox, QFrame, QGridLayout, QLabel
 
 from blobs_project import config
+from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.translations import tr
 
 
@@ -21,14 +22,13 @@ class TankControl(QFrame):
         layout.setHorizontalSpacing(12)
 
         layout.addWidget(self._pill(title, color), 0, 0, 1, 2)
-        layout.addWidget(self._caption(tr("regulation.desired")), 1, 0)
+        layout.addWidget(QtHelper.make_caption(tr("regulation.desired")), 1, 0)
         layout.addWidget(self._build_desired_spin(), 1, 1)
-        layout.addWidget(self._caption(tr("regulation.actual")), 2, 0)
-        self._actual_label = self._value_label()
-        layout.addWidget(self._actual_label, 2, 1)
-        layout.addWidget(self._caption(tr("regulation.deviation")), 3, 0)
-        self._deviation_label = self._value_label()
-        layout.addWidget(self._deviation_label, 3, 1)
+        self._actual_label = QtHelper.add_metric_row(layout, 2, tr("regulation.actual"))
+        self._deviation_label = QtHelper.add_metric_row(
+            layout, 3, tr("regulation.deviation")
+        )
+        self._flow_label = QtHelper.add_metric_row(layout, 4, tr("regulation.flow"))
         layout.setColumnStretch(1, 1)
 
     @staticmethod
@@ -40,18 +40,6 @@ class TankControl(QFrame):
         )
         pill.setAlignment(Qt.AlignmentFlag.AlignCenter)
         return pill
-
-    @staticmethod
-    def _caption(text: str) -> QLabel:
-        caption = QLabel(text)
-        caption.setObjectName("muted")
-        return caption
-
-    @staticmethod
-    def _value_label() -> QLabel:
-        label = QLabel("—")
-        label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        return label
 
     def _build_desired_spin(self) -> QDoubleSpinBox:
         spin = QDoubleSpinBox()
@@ -95,3 +83,6 @@ class TankControl(QFrame):
 
     def set_desired_editable(self, editable: bool) -> None:
         self._desired_spin.setEnabled(editable)
+
+    def set_flow(self, flow_l_min: float) -> None:
+        self._flow_label.setText(f"{flow_l_min:.1f}")

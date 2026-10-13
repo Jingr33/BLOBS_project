@@ -45,8 +45,8 @@ class RegulationFrame(QFrame):
         layout.addWidget(
             QtHelper.make_label(tr("regulation.section_title"), "sectionTitle")
         )
+        layout.addLayout(self._build_pump_grid())
         layout.addWidget(self._tank2_control)
-        layout.addLayout(self._build_metrics_grid())
         layout.addWidget(self._build_mode_label())
         layout.addSpacing(6)
         self._regulation_button = self._build_button(
@@ -80,30 +80,13 @@ class RegulationFrame(QFrame):
         row.addWidget(self._automatic_button, 2)
         return row
 
-    def _build_metrics_grid(self) -> QGridLayout:
+    def _build_pump_grid(self) -> QGridLayout:
         grid = QGridLayout()
         grid.setVerticalSpacing(8)
         grid.setHorizontalSpacing(12)
-        grid.addWidget(self._metric_caption(tr("regulation.flow")), 0, 0)
-        self._flow_label = self._metric_value()
-        grid.addWidget(self._flow_label, 0, 1)
-        grid.addWidget(self._metric_caption(tr("regulation.power")), 1, 0)
-        self._power_label = self._metric_value()
-        grid.addWidget(self._power_label, 1, 1)
+        self._power_label = QtHelper.add_metric_row(grid, 0, tr("regulation.power"))
         grid.setColumnStretch(1, 1)
         return grid
-
-    @staticmethod
-    def _metric_caption(text: str) -> QLabel:
-        caption = QLabel(text)
-        caption.setObjectName("muted")
-        return caption
-
-    @staticmethod
-    def _metric_value() -> QLabel:
-        value = QLabel("—")
-        value.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        return value
 
     def sync(self) -> None:
         regulation_service = self._regulation_service
@@ -115,9 +98,7 @@ class RegulationFrame(QFrame):
         self._tank2_control.set_desired_editable(
             not regulation_service.self_driven_active
         )
-        self._flow_label.setText(
-            f"{regulation_service.regulation_values.flow_l_min:.1f}"
-        )
+        self._tank2_control.set_flow(regulation_service.regulation_values.flow_l_min)
         self._power_label.setText(
             f"{regulation_service.regulation_values.pump_power_w:.2f}"
         )
