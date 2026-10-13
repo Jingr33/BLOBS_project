@@ -16,7 +16,7 @@ def test_default_language_is_english() -> None:
 def test_translation_returns_string_for_known_key() -> None:
     assert tr("header.title") == "Process monitoring"
     assert tr("regulation.start_regulation") == "Start regulation"
-    assert tr("regulation.stop_self_driven") == "Stop self-driven regulation"
+    assert tr("regulation.stop_automatic") == "Stop automatic regulation"
 
 
 def test_translation_formats_placeholders() -> None:

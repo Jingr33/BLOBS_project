@@ -55,7 +55,7 @@ def test_main_window_composes_separate_frames() -> None:
     app.processEvents()
 
 
-def test_header_shows_only_the_force_reset_action() -> None:
+def test_header_offers_export_csv_before_force_reset() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
@@ -64,7 +64,7 @@ def test_header_shows_only_the_force_reset_action() -> None:
 
     labels = [button.text() for button in header.findChildren(QPushButton)]
 
-    assert labels == ["Force reset"]
+    assert labels == ["Export CSV data", "Force reset"]
 
     window.close()
     app.processEvents()
@@ -106,7 +106,7 @@ def test_header_displays_the_blobs_logo() -> None:
     app.processEvents()
 
 
-def test_regulation_frame_offers_regulation_and_csv_actions() -> None:
+def test_regulation_frame_offers_regulation_import_and_automatic() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
@@ -118,15 +118,14 @@ def test_regulation_frame_offers_regulation_and_csv_actions() -> None:
     assert labels == [
         "Start regulation",
         "Import CSV data",
-        "Export CSV data",
-        "Start self-driven regulation",
+        "Start automatic regulation",
     ]
 
     window.close()
     app.processEvents()
 
 
-def test_import_and_export_buttons_share_one_row() -> None:
+def test_import_and_automatic_buttons_share_one_row() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
@@ -137,10 +136,10 @@ def test_import_and_export_buttons_share_one_row() -> None:
 
     buttons = {button.text(): button for button in frame.findChildren(QPushButton)}
     import_button = buttons["Import CSV data"]
-    export_button = buttons["Export CSV data"]
+    automatic_button = buttons["Start automatic regulation"]
 
-    assert import_button.y() == export_button.y()
-    assert export_button.x() > import_button.x()
+    assert import_button.y() == automatic_button.y()
+    assert automatic_button.x() > import_button.x()
 
     window.close()
     app.processEvents()
@@ -155,11 +154,11 @@ def test_regulation_toggle_switches_between_start_and_stop() -> None:
 
     buttons = frame.findChildren(QPushButton)
     regulation = buttons[0]
-    self_driven = buttons[3]
+    automatic = buttons[2]
     assert regulation.text() == "Start regulation"
     assert regulation.objectName() == "primary"
-    assert self_driven.text() == "Start self-driven regulation"
-    assert self_driven.objectName() == "primary"
+    assert automatic.text() == "Start automatic regulation"
+    assert automatic.objectName() == "primary"
 
     regulation.click()
     assert regulation.text() == "Stop regulation"
@@ -169,9 +168,9 @@ def test_regulation_toggle_switches_between_start_and_stop() -> None:
     assert regulation.text() == "Start regulation"
     assert regulation.objectName() == "primary"
 
-    self_driven.click()
-    assert self_driven.text() == "Start self-driven regulation"
-    assert self_driven.objectName() == "primary"
+    automatic.click()
+    assert automatic.text() == "Start automatic regulation"
+    assert automatic.objectName() == "primary"
 
     window.close()
     app.processEvents()

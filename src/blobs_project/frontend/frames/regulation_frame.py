@@ -18,10 +18,7 @@ from blobs_project.backend.regulation import (
     ProfileRequiredError,
     RegulationService,
 )
-from blobs_project.frontend.actions import (
-    ActionPlace,
-    visible_actions,
-)
+from blobs_project.frontend.actions import ActionId, ActionPlace, visible_actions
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.frontend.widgets.tank_control import TankControl
 from blobs_project.translations import tr
@@ -57,11 +54,10 @@ class RegulationFrame(QFrame):
         )
         layout.addWidget(self._regulation_button)
         layout.addSpacing(18)
-        layout.addLayout(self._build_action_row())
-        self._self_driven_button = self._build_button(
-            tr("regulation.start_self_driven"), "primary", self._toggle_self_driven
+        self._automatic_button = self._build_button(
+            tr("regulation.start_automatic"), "primary", self._toggle_automatic
         )
-        layout.addWidget(self._self_driven_button)
+        layout.addLayout(self._build_action_row())
         self._profile_label = QtHelper.make_label(
             tr("regulation.profile_missing"), "profile"
         )
@@ -75,14 +71,13 @@ class RegulationFrame(QFrame):
     def _build_action_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
         row.setSpacing(8)
-        for action_id in visible_actions(ActionPlace.REGULATION):
-            button = QPushButton(tr(f"action.{action_id.value}"))
-            button.clicked.connect(
-                lambda _checked=False, action_id=action_id: self.action_requested.emit(
-                    action_id
-                )
+        if ActionId.IMPORT_CSV in visible_actions(ActionPlace.REGULATION):
+            import_button = QPushButton(tr("action.import_csv"))
+            import_button.clicked.connect(
+                lambda _checked=False: self.action_requested.emit(ActionId.IMPORT_CSV)
             )
-            row.addWidget(button)
+            row.addWidget(import_button, 1)
+        row.addWidget(self._automatic_button, 2)
         return row
 
     def _build_metrics_grid(self) -> QGridLayout:
@@ -117,9 +112,15 @@ class RegulationFrame(QFrame):
             regulation_service.regulation_values.tank2_desired_cm,
             regulation_service.tank2_deviation_percent,
         )
-        self._tank2_control.set_desired_editable(not regulation_service.self_driven_active)
-        self._flow_label.setText(f"{regulation_service.regulation_values.flow_l_min:.1f}")
-        self._power_label.setText(f"{regulation_service.regulation_values.pump_power_w:.2f}")
+        self._tank2_control.set_desired_editable(
+            not regulation_service.self_driven_active
+        )
+        self._flow_label.setText(
+            f"{regulation_service.regulation_values.flow_l_min:.1f}"
+        )
+        self._power_label.setText(
+            f"{regulation_service.regulation_values.pump_power_w:.2f}"
+        )
 
         mode_key = (
             "regulation.desired_levels_profile"
@@ -134,14 +135,15 @@ class RegulationFrame(QFrame):
             "regulation.stop_regulation",
         )
         self._set_button_state(
-            self._self_driven_button,
+            self._automatic_button,
             regulation_service.self_driven_active,
-            "regulation.start_self_driven",
-            "regulation.stop_self_driven",
+            "regulation.start_automatic",
+            "regulation.stop_automatic",
         )
         self._regulation_button.setEnabled(not regulation_service.self_driven_active)
-        self._self_driven_button.setEnabled(
-            regulation_service.profile is not None and not regulation_service.regulation_active
+        self._automatic_button.setEnabled(
+            regulation_service.profile is not None
+            and not regulation_service.regulation_active
         )
         self._set_profile_label(regulation_service.profile)
 
@@ -161,7 +163,7 @@ class RegulationFrame(QFrame):
         self._regulation_service.toggle_regulation()
         self.sync()
 
-    def _toggle_self_driven(self) -> None:
+    def _toggle_automatic(self) -> None:
         try:
             self._regulation_service.toggle_self_driven()
         except ProfileRequiredError:

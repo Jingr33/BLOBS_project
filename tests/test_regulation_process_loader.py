@@ -81,7 +81,9 @@ def test_export_reports_missing_samples(tmp_path: Path) -> None:
     regulation_service = RegulationService()
 
     assert (
-        CsvExporter.export_samples_csv(regulation_service.sample_log.samples, tmp_path / "out.csv")
+        CsvExporter.export_samples_csv(
+            regulation_service.sample_log.samples, tmp_path / "out.csv"
+        )
         is False
     )
 
@@ -93,7 +95,10 @@ def test_export_writes_recorded_samples(tmp_path: Path) -> None:
         regulation_service.tick(0.1)
     path = tmp_path / "out.csv"
 
-    assert CsvExporter.export_samples_csv(regulation_service.sample_log.samples, path) is True
+    assert (
+        CsvExporter.export_samples_csv(regulation_service.sample_log.samples, path)
+        is True
+    )
 
     lines = path.read_text(encoding="utf-8").splitlines()
     assert lines[0] == "time_s,tank2_actual_cm"

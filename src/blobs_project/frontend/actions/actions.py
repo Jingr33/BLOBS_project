@@ -5,9 +5,9 @@ from .action_place import ActionPlace
 from .header_action import HeaderAction
 
 HEADER_ACTIONS: Final[dict[ActionId, HeaderAction]] = {
-    ActionId.FORCE_RESET: HeaderAction((ActionPlace.TOOLBAR,)),
+    ActionId.EXPORT_CSV: HeaderAction((ActionPlace.HEADER,)),
+    ActionId.FORCE_RESET: HeaderAction((ActionPlace.HEADER,)),
     ActionId.IMPORT_CSV: HeaderAction((ActionPlace.REGULATION,)),
-    ActionId.EXPORT_CSV: HeaderAction((ActionPlace.REGULATION,)),
 }
 
 

@@ -15,7 +15,9 @@ from .style import STYLE_SHEET
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, regulation_service: RegulationService, csv_service: CsvService) -> None:
+    def __init__(
+        self, regulation_service: RegulationService, csv_service: CsvService
+    ) -> None:
         super().__init__()
         self._regulation_service = regulation_service
         self._previous_state: tuple[bool, bool] = (False, False)
@@ -76,7 +78,9 @@ class MainWindow(QMainWindow):
 
     def _refresh_view(self) -> None:
         self._regulation_frame.sync()
-        self._visualization.update_process_data(self._regulation_service.regulation_values)
+        self._visualization.update_process_data(
+            self._regulation_service.regulation_values
+        )
         if self._regulation_service.chart_started:
             samples = self._regulation_service.trend_points()
             desired_samples = self._regulation_service.desired_trend_points()
@@ -85,12 +89,17 @@ class MainWindow(QMainWindow):
             desired_samples = None
         self._visualization.update_trend_samples(samples, desired_samples)
         self._footer.set_regulation_time(
-            self._regulation_service.elapsed_s if self._regulation_service.is_running else None
+            self._regulation_service.elapsed_s
+            if self._regulation_service.is_running
+            else None
         )
         self._footer.set_remaining_time(self._regulation_service.remaining_s)
 
     def _report_state_changes(self) -> None:
-        current = (self._regulation_service.regulation_active, self._regulation_service.self_driven_active)
+        current = (
+            self._regulation_service.regulation_active,
+            self._regulation_service.self_driven_active,
+        )
         previous = self._previous_state
         self._previous_state = current
         if current == previous:
@@ -99,11 +108,11 @@ class MainWindow(QMainWindow):
             key = (
                 "status.profile_finished"
                 if self._regulation_service.profile_finished
-                else "status.self_driven_stopped"
+                else "status.automatic_stopped"
             )
             self._footer.set_status(tr(key))
         elif current[1] and not previous[1]:
-            self._footer.set_status(tr("status.self_driven_running"))
+            self._footer.set_status(tr("status.automatic_running"))
         elif previous[0] and not current[0]:
             self._footer.set_status(tr("status.regulation_stopped"))
         elif current[0] and not previous[0]:

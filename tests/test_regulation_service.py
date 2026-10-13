@@ -64,7 +64,10 @@ def test_desired_setpoint_is_clamped_to_tank_range() -> None:
 
     regulation_service.regulation_values.tank2_desired_cm = 120.0
 
-    assert regulation_service.regulation_values.tank2_desired_cm == config.TANK_LEVEL_MAX_CM
+    assert (
+        regulation_service.regulation_values.tank2_desired_cm
+        == config.TANK_LEVEL_MAX_CM
+    )
 
 
 def test_regulation_moves_actual_level_towards_desired() -> None:
@@ -75,7 +78,10 @@ def test_regulation_moves_actual_level_towards_desired() -> None:
     for _ in range(100):
         regulation_service.tick(0.1)
 
-    assert regulation_service.regulation_values.tank2_actual_cm > config.TANK_ACTUAL_LEVEL_CM
+    assert (
+        regulation_service.regulation_values.tank2_actual_cm
+        > config.TANK_ACTUAL_LEVEL_CM
+    )
 
 
 def test_trend_points_expose_recorded_samples() -> None:

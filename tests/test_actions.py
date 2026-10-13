@@ -7,29 +7,30 @@ from blobs_project.frontend.actions import (
 )
 
 
-def test_toolbar_contains_only_force_reset() -> None:
-    toolbar = visible_actions(ActionPlace.TOOLBAR)
-
-    assert set(toolbar) == {ActionId.FORCE_RESET}
-
-
-def test_csv_actions_live_in_the_regulation_place() -> None:
-    regulation = visible_actions(ActionPlace.REGULATION)
-
-    assert set(regulation) == {ActionId.IMPORT_CSV, ActionId.EXPORT_CSV}
-
-
-def test_removed_header_actions_are_gone() -> None:
-    values = {action_id.value for action_id in ActionId}
-
-    assert values == {"force_reset", "export_report", "import_csv", "export_csv"}
-
-
-def test_disabled_action_can_be_switched_on() -> None:
-    pass
-
-def test_action_ids_are_unique_identifiers() -> None:
-    values = [action_id.value for action_id in ActionId]
-
-    assert len(values) == len(set(values))
+def test_every_action_is_registered() -> None:
     assert set(HEADER_ACTIONS) == set(ActionId)
+
+
+def test_header_offers_export_csv_before_force_reset() -> None:
+    assert list(visible_actions(ActionPlace.HEADER)) == [
+        ActionId.EXPORT_CSV,
+        ActionId.FORCE_RESET,
+    ]
+
+
+def test_regulation_place_offers_only_import_csv() -> None:
+    assert list(visible_actions(ActionPlace.REGULATION)) == [ActionId.IMPORT_CSV]
+
+
+def test_disabled_action_is_hidden_from_users() -> None:
+    original = HEADER_ACTIONS[ActionId.IMPORT_CSV]
+    try:
+        HEADER_ACTIONS[ActionId.IMPORT_CSV] = HeaderAction(
+            (ActionPlace.REGULATION,), enabled=False
+        )
+
+        assert ActionId.IMPORT_CSV not in visible_actions(ActionPlace.REGULATION)
+    finally:
+        HEADER_ACTIONS[ActionId.IMPORT_CSV] = original
+
+    assert ActionId.IMPORT_CSV in visible_actions(ActionPlace.REGULATION)
