@@ -7,6 +7,7 @@ STRINGS: Final[dict[str, str]] = {
     "action.force_reset": "Force reset",
     "action.import_csv": "Import CSV data",
     "action.export_csv": "Export CSV data",
+    "action.download_template": "Download CSV template",
     "status.ready": "Ready for preview",
     "status.force_reset": "Regulation reset",
     "status.regulation_running": "Regulation running",
@@ -20,6 +21,7 @@ STRINGS: Final[dict[str, str]] = {
     "status.export_ready": "CSV data exported",
     "status.export_missing": "No samples to export yet",
     "status.export_failed": "CSV data could not be written",
+    "status.template_saved": "CSV template saved",
     "nav.overview": "Process overview",
     "nav.chart": "Live chart",
     "regulation.section_title": "REGULATION",
@@ -52,4 +54,5 @@ STRINGS: Final[dict[str, str]] = {
     "dialog.import_title": "Import desired level profile",
     "dialog.export_title": "Export regulation samples",
     "dialog.csv_filter": "CSV files (*.csv)",
+    "dialog.template_title": "Download CSV template",
 }

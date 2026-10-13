@@ -60,3 +60,24 @@ def test_export_samples_reports_a_file_error(tmp_path: Path) -> None:
         csv_service.export_samples(regulation_service.sample_log.samples, unwritable)
         is SampleExportStatus.FAILED
     )
+
+
+def test_save_template_writes_the_profile_header(tmp_path: Path) -> None:
+    csv_service = CsvService()
+    path = tmp_path / "template.csv"
+
+    assert csv_service.save_template(path)
+    assert path.read_text(encoding="utf-8") == "tank2_desired_cm\n"
+
+    path.write_text("tank2_desired_cm\n20.0\n", encoding="utf-8")
+    profile = csv_service.load_profile(path)
+
+    assert profile is not None
+    assert profile.row_count == 1
+
+
+def test_save_template_reports_a_file_error(tmp_path: Path) -> None:
+    csv_service = CsvService()
+    unwritable = tmp_path / "missing-directory" / "template.csv"
+
+    assert not csv_service.save_template(unwritable)

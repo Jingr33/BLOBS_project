@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QFileDialog, QWidget
 
 from blobs_project.backend.csv_management import CsvService
 from blobs_project.backend.regulation import RegulationService
@@ -22,6 +22,7 @@ class ActionDispatcher:
             ActionId.FORCE_RESET: self._force_reset,
             ActionId.IMPORT_CSV: self._import_csv,
             ActionId.EXPORT_CSV: self._export_csv,
+            ActionId.DOWNLOAD_CSV_TEMPLATE: self._download_template,
         }
 
     def execute(self, action_id: ActionId, parent: QWidget) -> str | None:
@@ -43,3 +44,16 @@ class ActionDispatcher:
         return CsvActions.export_csv(
             parent, self._csv_service, self._regulation_service
         )
+
+    def _download_template(self, parent: QWidget) -> str | None:
+        path, _ = QFileDialog.getSaveFileName(
+            parent,
+            tr("dialog.template_title"),
+            "profile_template.csv",
+            tr("dialog.csv_filter"),
+        )
+        if not path:
+            return None
+        if not self._csv_service.save_template(path):
+            return tr("status.export_failed")
+        return tr("status.template_saved")

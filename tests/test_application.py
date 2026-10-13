@@ -64,7 +64,7 @@ def test_header_offers_export_csv_before_force_reset() -> None:
 
     labels = [button.text() for button in header.findChildren(QPushButton)]
 
-    assert labels == ["Export CSV data", "Force reset"]
+    assert labels == ["Export CSV data", "Force reset", "Download CSV template"]
 
     window.close()
     app.processEvents()
