@@ -11,6 +11,8 @@ class Sample:
     time_s: float
     tank2_desired_cm: float
     tank2_actual_cm: float
+    flow_l_min: float = 0.0
+    pump_power_w: float = 0.0
 
 
 class SampleLog:
@@ -22,8 +24,18 @@ class SampleLog:
         time_s: float,
         tank2_desired_cm: float,
         tank2_actual_cm: float,
+        flow_l_min: float = 0.0,
+        pump_power_w: float = 0.0,
     ) -> None:
-        self._samples.append(Sample(time_s, tank2_desired_cm, tank2_actual_cm))
+        self._samples.append(
+            Sample(
+                time_s,
+                tank2_desired_cm,
+                tank2_actual_cm,
+                flow_l_min,
+                pump_power_w,
+            )
+        )
 
     def clear(self) -> None:
         self._samples.clear()
@@ -40,3 +52,9 @@ class SampleLog:
 
     def desired_trend_points(self) -> list[tuple[float, float]]:
         return [(sample.time_s, sample.tank2_desired_cm) for sample in self._samples]
+
+    def flow_trend_points(self) -> list[tuple[float, float]]:
+        return [(sample.time_s, sample.flow_l_min) for sample in self._samples]
+
+    def pump_power_trend_points(self) -> list[tuple[float, float]]:
+        return [(sample.time_s, sample.pump_power_w) for sample in self._samples]

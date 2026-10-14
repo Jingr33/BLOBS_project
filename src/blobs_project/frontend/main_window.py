@@ -87,7 +87,12 @@ class MainWindow(QMainWindow):
         else:
             samples = None
             desired_samples = None
-        self._visualization.update_trend_samples(samples, desired_samples)
+        self._visualization.update_trend_samples(
+            samples,
+            desired_samples,
+            self._regulation_service.flow_trend_points(),
+            self._regulation_service.pump_power_trend_points(),
+        )
         self._footer.set_regulation_time(
             self._regulation_service.elapsed_s
             if self._regulation_service.is_running

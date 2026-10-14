@@ -127,6 +127,12 @@ class RegulationService:
             return self._full_profile_points()
         return self._sample_log.desired_trend_points()
 
+    def flow_trend_points(self) -> list[tuple[float, float]]:
+        return self._sample_log.flow_trend_points()
+
+    def pump_power_trend_points(self) -> list[tuple[float, float]]:
+        return self._sample_log.pump_power_trend_points()
+
     def _reset_run_state(self) -> None:
         self._stopwatch.start()
         self._chart_started = True
@@ -190,6 +196,8 @@ class RegulationService:
             self._stopwatch.elapsed_s,
             self.regulation_values.tank2_desired_cm,
             self.regulation_values.tank2_actual_cm,
+            self.regulation_values.flow_l_min,
+            self.regulation_values.pump_power_w,
         )
 
     def _stop_profile_when_finished(self) -> None:

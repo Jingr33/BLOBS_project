@@ -18,6 +18,7 @@ CYAN: Final = "#45d7e8"
 GREEN: Final = "#70e1ac"
 ORANGE: Final = "#ffab5c"
 RED: Final = "#ff6d83"
+VIOLET: Final = "#a978ff"
 
 # deatil colors
 BUTTON_BACKGROUND: Final = "#1b2b42"
@@ -32,7 +33,7 @@ TANK_MINIMUM_WIDTH: Final = 560
 TANK_MINIMUM_HEIGHT: Final = 360
 TANK_LEVEL_MAX_CM: Final = 30
 TANK_SCALE_TICKS: Final = (0, 10, 20, 30)
-TANK_UPPER_COLOR: Final = "#a978ff"
+TANK_UPPER_COLOR: Final = VIOLET
 TANK_LOWER_COLOR: Final = "#ff9e5c"
 TANK_FILL_COLOR: Final = "#58c7e5"
 TANK_ACTUAL_MARKER_COLOR: Final = "#ff3ea5"
@@ -43,11 +44,13 @@ TANK_PIPE_COLOR: Final = "#526b88"
 TANK_PUMP_COLOR: Final = CYAN
 
 # trend preview parameters
-TREND_MINIMUM_HEIGHT: Final = 170
+TREND_MINIMUM_HEIGHT: Final = 240
 TREND_TIME_WINDOW_S: Final = 120.0
 TREND_X_TICK_S: Final = 30.0
 TREND_ACTUAL_COLOR: Final = CYAN
 TREND_DESIRED_COLOR: Final = RED
+TREND_FLOW_COLOR: Final = ORANGE
+TREND_POWER_COLOR: Final = VIOLET
 TREND_SERIES: Final = (
     (CYAN, (0.0, 0.65, 0.2, 0.56, 0.42, 0.48, 0.64, 0.34, 0.82, 0.25, 1.0, 0.30)),
     (ORANGE, (0.0, 0.48, 0.2, 0.49, 0.42, 0.53, 0.64, 0.58, 0.82, 0.52, 1.0, 0.55)),

@@ -46,8 +46,12 @@ class VisualizationFrame(QFrame):
         self,
         samples: Sequence[tuple[float, float]] | None,
         desired_samples: Sequence[tuple[float, float]] | None = None,
+        flow_samples: Sequence[tuple[float, float]] | None = None,
+        pump_power_samples: Sequence[tuple[float, float]] | None = None,
     ) -> None:
-        self._trend_preview.set_samples(samples, desired_samples)
+        self._trend_preview.set_samples(
+            samples, desired_samples, flow_samples, pump_power_samples
+        )
 
     def _build_nav_bar(self) -> QHBoxLayout:
         nav_bar = QHBoxLayout()

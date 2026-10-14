@@ -20,3 +20,12 @@ def test_sample_log_clear_removes_every_sample() -> None:
 
     assert len(log) == 0
     assert log.trend_points() == []
+
+
+def test_sample_log_exposes_flow_and_pump_power_trends() -> None:
+    log = SampleLog(limit=5)
+    log.append(1.0, 20.0, 18.0, 1.2, 0.08)
+    log.append(2.0, 20.0, 19.0, 0.8, 0.05)
+
+    assert log.flow_trend_points() == [(1.0, 1.2), (2.0, 0.8)]
+    assert log.pump_power_trend_points() == [(1.0, 0.08), (2.0, 0.05)]
