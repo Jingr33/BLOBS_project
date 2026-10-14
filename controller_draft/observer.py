@@ -8,6 +8,21 @@ def solve_kalman_gain(Ad: np.ndarray, Cd: np.ndarray, Q_kf: np.ndarray, R_kf: np
  
 class KalmanFilter:
     def __init__(self, Ad, Bd, Cd, Q_kf, R_kf, x_eq, u_eq):
+        """
+        Args:
+            Ad, Bd, Cd: discrete state-space matrices (see
+                mpc_model.get_discrete_model).
+            Q_kf: process noise covariance (model uncertainty), shape (n, n).
+            R_kf: measurement noise covariance, shape (1, 1).
+            x_eq: equilibrium state (the same point Ad/Bd/Cd are linearized
+                around), length n.
+            u_eq: equilibrium voltage [V] corresponding to x_eq.
+
+        `P` (state covariance) starts deliberately oversized relative to
+        Q_kf (~1e-8), so the filter trusts the first few measurements
+        strongly and quickly corrects a cold-start guess. It shrinks over the
+        first 50-100 steps as confidence grows.
+        """
         self.Ad, self.Bd, self.Cd = Ad, Bd, Cd
         self.Q_kf, self.R_kf = Q_kf, R_kf
         self.n = Ad.shape[0]
@@ -16,11 +31,6 @@ class KalmanFilter:
         self.y_eq = (Cd @ self.x_eq).item()
  
         self.dx_hat = np.zeros((self.n, 1))
-        # P = how uncertain the current state estimate is believed to be.
-        # Starts deliberately oversized (relative to Q_kf, which is ~1e-8),
-        # so the filter trusts the first few measurements strongly and
-        # quickly corrects a cold-start guess that may be far from the
-        # truth. It shrinks over the first ~50-100 steps as confidence grows.
         self.P = np.eye(self.n) * 1.0
  
     @property
@@ -41,18 +51,21 @@ class KalmanFilter:
         # estimate for the new operating point.
  
     def update(self, u_prev: float, y_meas: float) -> np.ndarray:
+        """One filter step: predict from the model, then correct from the measurement.
+
+        Predict propagates the estimate and its uncertainty one step forward
+        using the linear model. Correct compares the model's predicted
+        measurement against the real one, and pulls the estimate toward the
+        measurement by an amount set by the Kalman gain L.
+        """
         du = u_prev - self.u_eq
         dy = y_meas - self.y_eq
- 
-        # Predict: propagate the estimate and its uncertainty one step
-        # forward using the linear model.
+       
+        # Predict
         dx_pred = self.Ad @ self.dx_hat + self.Bd * du
         P_pred = self.Ad @ self.P @ self.Ad.T + self.Q_kf
  
-        # Correct: compare the model's predicted measurement against the
-        # real one, and pull the estimate toward the measurement by an
-        # amount set by the Kalman gain L (how much to trust the
-        # measurement versus the model's own prediction).
+        # Correct
         S = self.Cd @ P_pred @ self.Cd.T + self.R_kf
         L = P_pred @ self.Cd.T @ np.linalg.inv(S)
  
