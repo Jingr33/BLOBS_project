@@ -28,7 +28,12 @@ class TrendPreview(QWidget):
         self._desired_samples: list[tuple[float, float]] | None = None
         self._flow_samples: list[tuple[float, float]] | None = None
         self._pump_power_samples: list[tuple[float, float]] | None = None
+        self._total_energy_wh = 0.0
         self._x_span = config.TREND_TIME_WINDOW_S
+
+    def set_total_energy(self, total_energy_wh: float) -> None:
+        self._total_energy_wh = total_energy_wh
+        self.update()
 
     def set_samples(
         self,
@@ -77,6 +82,20 @@ class TrendPreview(QWidget):
         self._draw_grid(painter, plot)
         self._draw_axis_labels(painter, plot)
         self._draw_series(painter, plot)
+        self._draw_energy_pill(painter, plot)
+
+    def _draw_energy_pill(self, painter: QPainter, plot: QRectF) -> None:
+        text = tr("diagram.energy_value", value=self._total_energy_wh)
+        width = painter.fontMetrics().horizontalAdvance(text) + 20.0
+        height = 24.0
+        rect = QRectF(plot.left() + 8, plot.top() + 8, width, height)
+        painter.save()
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(config.YELLOW))
+        painter.drawRoundedRect(rect, height / 2, height / 2)
+        painter.setPen(QColor(config.PRIMARY_TEXT))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
+        painter.restore()
 
     def _plot_rect(self) -> QRectF:
         return QRectF(

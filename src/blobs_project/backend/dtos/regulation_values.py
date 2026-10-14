@@ -15,6 +15,7 @@ class RegulationValues:
     _tank2_desired_cm: float
     _flow_l_min: float
     _pump_power_w: float
+    _total_energy_wh: float = 0.0
 
     @property
     def tank2_actual_cm(self) -> float:
@@ -48,6 +49,14 @@ class RegulationValues:
     def pump_power_w(self, value: float) -> None:
         self._pump_power_w = value
 
+    @property
+    def total_energy_wh(self) -> float:
+        return self._total_energy_wh
+
+    @total_energy_wh.setter
+    def total_energy_wh(self, value: float) -> None:
+        self._total_energy_wh = max(0.0, value)
+
     @classmethod
     def set_with_inital_values(cls) -> RegulationValues:
         return cls(TANK_ACTUAL_LEVEL_CM, TANK_DESIRED_LEVEL_CM, 0.0, 0.0)
@@ -57,6 +66,9 @@ class RegulationValues:
 
     def reset_pump(self) -> None:
         self._pump_power_w = 0.0
+
+    def reset_energy(self) -> None:
+        self._total_energy_wh = 0.0
 
     @staticmethod
     def _clamp(value_cm: float) -> float:

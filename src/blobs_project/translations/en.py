@@ -50,6 +50,7 @@ STRINGS: Final[dict[str, str]] = {
     "diagram.pump": "P",
     "diagram.flow_value": "Flow {value:.1f} L/min",
     "diagram.power_value": "Power {value:.2f} W",
+    "diagram.energy_value": "Energy {value:.2f} Wh",
     "diagram.no_sensor": "no sensor",
     "diagram.scale_unit": "[cm]",
     "trend.actual": "actual",

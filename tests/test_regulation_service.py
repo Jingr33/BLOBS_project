@@ -207,3 +207,17 @@ def test_flow_and_power_are_measured_while_the_level_rises() -> None:
 
     assert regulation_service.regulation_values.flow_l_min == 0.0
     assert regulation_service.regulation_values.pump_power_w == 0.0
+
+
+def test_total_energy_accumulates_while_the_pump_runs() -> None:
+    regulation_service = RegulationService()
+    regulation_service.regulation_values.tank2_desired_cm = config.TANK_LEVEL_MAX_CM
+    regulation_service.toggle_regulation()
+    for _ in range(10):
+        regulation_service.tick(0.1)
+
+    assert regulation_service.regulation_values.total_energy_wh > 0.0
+
+    regulation_service.force_reset()
+
+    assert regulation_service.regulation_values.total_energy_wh == 0.0

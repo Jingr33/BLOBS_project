@@ -114,6 +114,9 @@ class RegulationService:
         if self._self_driven_active:
             self._apply_profile_desired()
         self._advance_level(dt_s)
+        self.regulation_values.total_energy_wh += (
+            self.regulation_values.pump_power_w * dt_s / 3600.0
+        )
         self._record_sample()
         self._stop_profile_when_finished()
 
@@ -140,6 +143,7 @@ class RegulationService:
         self._controller.reset()
         self.regulation_values.reset_flow()
         self.regulation_values.reset_pump()
+        self.regulation_values.reset_energy()
 
     def _apply_profile_desired(self) -> None:
         if self._profile is None:

@@ -19,6 +19,7 @@ GREEN: Final = "#70e1ac"
 ORANGE: Final = "#ffab5c"
 RED: Final = "#ff6d83"
 VIOLET: Final = "#a978ff"
+YELLOW: Final = "#ffd166"
 
 # deatil colors
 BUTTON_BACKGROUND: Final = "#1b2b42"

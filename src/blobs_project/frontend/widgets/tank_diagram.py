@@ -8,7 +8,7 @@ from blobs_project import config
 from blobs_project.backend.dtos.regulation_values import RegulationValues
 from blobs_project.translations import tr
 
-from .tank_geometry import PILL_GAP, TankGeometry
+from .tank_geometry import PILL_GAP, PILL_HEIGHT, TankGeometry
 
 ARROW_HALF_WIDTH: float = 8.0
 ARROW_BODY: float = 11.0
@@ -26,12 +26,14 @@ class TankDiagram(QWidget):
         self._tank2_desired_cm = config.TANK_DESIRED_LEVEL_CM
         self._flow_l_min = 0.0
         self._pump_power_w = 0.0
+        self._total_energy_wh = 0.0
 
     def set_process_data(self, regulation_values: RegulationValues) -> None:
         self._tank2_actual_cm = regulation_values.tank2_actual_cm
         self._tank2_desired_cm = regulation_values.tank2_desired_cm
         self._flow_l_min = regulation_values.flow_l_min
         self._pump_power_w = regulation_values.pump_power_w
+        self._total_energy_wh = regulation_values.total_energy_wh
         self.update()
 
     def paintEvent(self, _event: object) -> None:
@@ -47,6 +49,7 @@ class TankDiagram(QWidget):
         self._draw_scale(painter, geometry)
         self._draw_pump(painter, geometry.pump)
         self._draw_flow_readout(painter, geometry.tank2)
+        self._draw_energy_pill(painter)
         self._draw_pill(
             painter,
             geometry,
@@ -257,6 +260,22 @@ class TankDiagram(QWidget):
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             tr("diagram.flow_value", value=self._flow_l_min),
         )
+        painter.restore()
+
+    def _draw_energy_pill(self, painter: QPainter) -> None:
+        text = tr("diagram.energy_value", value=self._total_energy_wh)
+        font = QFont(painter.font())
+        font.setBold(True)
+        width = QFontMetricsF(font).horizontalAdvance(text) + PILL_TEXT_PADDING
+        height = PILL_HEIGHT
+        rect = QRectF(12.0, self.height() - height - 12.0, width, height)
+        painter.save()
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(config.YELLOW))
+        painter.drawRoundedRect(rect, height / 2, height / 2)
+        painter.setFont(font)
+        painter.setPen(QColor(config.PRIMARY_TEXT))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
         painter.restore()
 
     @staticmethod

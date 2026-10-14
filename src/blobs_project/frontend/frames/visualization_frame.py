@@ -41,6 +41,7 @@ class VisualizationFrame(QFrame):
 
     def update_process_data(self, regulation_values: RegulationValues) -> None:
         self._tank_diagram.set_process_data(regulation_values)
+        self._trend_preview.set_total_energy(regulation_values.total_energy_wh)
 
     def update_trend_samples(
         self,
