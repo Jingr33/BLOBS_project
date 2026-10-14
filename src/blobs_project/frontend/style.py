@@ -5,6 +5,7 @@ STYLE_SHEET = f"""
         background: {config.BACKGROUND};
         color: {config.TEXT};
         font-family: {config.FONT_FAMILY};
+        font-size: 17px;
     }}
     QFrame#panel {{
         background: {config.PANEL};
@@ -25,6 +26,7 @@ STYLE_SHEET = f"""
         border-radius: 7px;
         padding: 6px 8px;
         color: {config.TEXT};
+        font-size: 15px;
         font-weight: 600;
     }}
     QDoubleSpinBox:hover {{
@@ -40,25 +42,26 @@ STYLE_SHEET = f"""
     }}
     QLabel#eyebrow {{
         color: {config.CYAN};
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 700;
         letter-spacing: 2px;
     }}
     QLabel#sectionTitle {{
         color: {config.CYAN};
-        font-size: 17px;
+        font-size: 22px;
         font-weight: 700;
         letter-spacing: 3px;
     }}
-    QLabel#title {{ font-size: 25px; font-weight: 700; }}
+    QLabel#title {{ font-size: 35px; font-weight: 700; }}
     QLabel#muted {{ color: {config.MUTED}; }}
-    QLabel#profile {{ color: {config.MUTED}; font-size: 12px; }}
+    QLabel#profile {{ color: {config.MUTED}; font-size: 15px; }}
     QPushButton {{
         background: {config.BUTTON_BACKGROUND};
         border: 1px solid {config.BUTTON_BORDER};
         border-radius: 7px;
         padding: 9px 14px;
         color: {config.TEXT};
+        font-size: 17px;
     }}
     QPushButton:hover {{
         background: {config.BUTTON_HOVER_BACKGROUND};

@@ -10,8 +10,8 @@ from PyQt6.QtWidgets import (
 )
 
 from blobs_project.backend.dtos.regulation_values import RegulationValues
-from blobs_project.frontend.widgets.historical_trends import HistoricalTrends
 from blobs_project.frontend.helpers.qt_helper import QtHelper
+from blobs_project.frontend.widgets.historical_trends import HistoricalTrends
 from blobs_project.frontend.widgets.tank_diagram import TankDiagram
 from blobs_project.frontend.widgets.trend_preview import TrendPreview
 from blobs_project.translations import tr
