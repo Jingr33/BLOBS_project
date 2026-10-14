@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 )
 
 from blobs_project.backend.dtos.regulation_values import RegulationValues
-from blobs_project.frontend.frames.historical_trends_frame import HistoricalTrendsFrame
+from blobs_project.frontend.widgets.historical_trends import HistoricalTrends
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.frontend.widgets.tank_diagram import TankDiagram
 from blobs_project.frontend.widgets.trend_preview import TrendPreview
@@ -25,7 +25,7 @@ class VisualizationFrame(QFrame):
         self._nav_buttons: list[QPushButton] = []
         self._tank_diagram = TankDiagram()
         self._trend_preview = TrendPreview()
-        self._historical_trends_frame = HistoricalTrendsFrame()
+        self._historical_trends = HistoricalTrends()
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -36,7 +36,7 @@ class VisualizationFrame(QFrame):
         layout.addWidget(self._stack, 1)
         self._add_page(self._tank_diagram)
         self._add_page(self._trend_preview)
-        self._add_page(self._historical_trends_frame)
+        self._add_page(self._historical_trends)
         self._select_page(0)
 
     def update_process_data(self, regulation_values: RegulationValues) -> None:
