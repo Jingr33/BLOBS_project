@@ -5,11 +5,10 @@ from collections.abc import Callable
 from PyQt6.QtWidgets import QFileDialog, QWidget
 
 from blobs_project.backend.csv_management import CsvService
-from blobs_project.backend.regulation import RegulationService
+from blobs_project.backend.regulation import RegulationService, SampleExportStatus
 from blobs_project.translations import tr
 
 from .action_id import ActionId
-from .csv_actions import CsvActions
 
 
 class ActionDispatcher:
@@ -36,14 +35,35 @@ class ActionDispatcher:
         return tr("status.force_reset")
 
     def _import_csv(self, parent: QWidget) -> str | None:
-        return CsvActions.import_csv(
-            parent, self._csv_service, self._regulation_service
+        path, _ = QFileDialog.getOpenFileName(
+            parent, tr("dialog.import_title"), "", tr("dialog.csv_filter")
+        )
+        if not path:
+            return None
+        profile = self._csv_service.load_profile(path)
+        if profile is None:
+            return tr("status.profile_invalid")
+        self._regulation_service.set_profile(profile)
+        return tr(
+            "status.profile_loaded",
+            rows=profile.row_count,
+            duration=profile.duration_s,
         )
 
     def _export_csv(self, parent: QWidget) -> str | None:
-        return CsvActions.export_csv(
-            parent, self._csv_service, self._regulation_service
+        path, _ = QFileDialog.getSaveFileName(
+            parent, tr("dialog.export_title"), "samples.csv", tr("dialog.csv_filter")
         )
+        if not path:
+            return None
+        status = self._csv_service.export_samples(
+            self._regulation_service.sample_log.samples, path
+        )
+        if status is SampleExportStatus.FAILED:
+            return tr("status.export_failed")
+        if status is SampleExportStatus.NO_SAMPLES:
+            return tr("status.export_missing")
+        return tr("status.export_ready")
 
     def _download_template(self, parent: QWidget) -> str | None:
         path, _ = QFileDialog.getSaveFileName(

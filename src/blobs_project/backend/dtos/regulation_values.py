@@ -58,7 +58,7 @@ class RegulationValues:
         self._total_energy_wh = max(0.0, value)
 
     @classmethod
-    def set_with_inital_values(cls) -> RegulationValues:
+    def default(cls) -> RegulationValues:
         return cls(TANK_ACTUAL_LEVEL_CM, TANK_DESIRED_LEVEL_CM, 0.0, 0.0)
 
     def reset_flow(self) -> None:

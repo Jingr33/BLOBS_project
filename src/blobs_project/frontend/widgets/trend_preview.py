@@ -8,6 +8,7 @@ from PyQt6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
 from blobs_project import config
+from blobs_project.frontend.helpers.paint_helper import PaintHelper
 from blobs_project.translations import tr
 
 PLOT_LEFT_MARGIN: float = 52.0
@@ -82,20 +83,9 @@ class TrendPreview(QWidget):
         self._draw_grid(painter, plot)
         self._draw_axis_labels(painter, plot)
         self._draw_series(painter, plot)
-        self._draw_energy_pill(painter, plot)
-
-    def _draw_energy_pill(self, painter: QPainter, plot: QRectF) -> None:
-        text = tr("diagram.energy_value", value=self._total_energy_wh)
-        width = painter.fontMetrics().horizontalAdvance(text) + 20.0
-        height = 24.0
-        rect = QRectF(plot.left() + 8, plot.top() + 8, width, height)
-        painter.save()
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(config.YELLOW))
-        painter.drawRoundedRect(rect, height / 2, height / 2)
-        painter.setPen(QColor(config.PRIMARY_TEXT))
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
-        painter.restore()
+        PaintHelper.draw_energy_pill(
+            painter, self._total_energy_wh, plot.left() + 8, plot.top() + 8, 24.0
+        )
 
     def _plot_rect(self) -> QRectF:
         return QRectF(

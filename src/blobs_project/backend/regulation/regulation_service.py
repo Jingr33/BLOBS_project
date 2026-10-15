@@ -22,7 +22,7 @@ class RegulationService:
         self._self_driven_active = False
         self._profile_finished = False
         self._chart_started = False
-        self.regulation_values = RegulationValues.set_with_inital_values()
+        self.regulation_values = RegulationValues.default()
 
     @property
     def profile(self) -> CsvProfile | None:
