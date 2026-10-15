@@ -24,7 +24,6 @@ STRINGS: Final[dict[str, str]] = {
     "status.template_saved": "CSV template saved",
     "nav.overview": "Process overview",
     "nav.chart": "Live chart",
-    "nav.historical": "Historical trends",
     "regulation.section_title": "REGULATION",
     "regulation.subtitle": "Current level / desired / deviation",
     "regulation.desired": "Desired [cm]:",

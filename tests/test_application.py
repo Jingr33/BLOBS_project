@@ -85,14 +85,7 @@ def test_visualization_frame_switches_between_pages() -> None:
     assert frame.current_page == 1
     assert chart_button.objectName() == "navActive"
     assert frame.findChildren(QPushButton)[0].objectName() == "nav"
-
-    historical_button = frame.findChildren(QPushButton)[2]
-    assert historical_button.text() == "Historical trends"
-    historical_button.click()
-
-    assert frame.current_page == 2
-    assert historical_button.objectName() == "navActive"
-    assert chart_button.objectName() == "nav"
+    assert len(frame.findChildren(QPushButton)) == 2
 
     window.close()
     app.processEvents()

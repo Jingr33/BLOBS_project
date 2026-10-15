@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import (
 
 from blobs_project.backend.dtos.regulation_values import RegulationValues
 from blobs_project.frontend.helpers.qt_helper import QtHelper
-from blobs_project.frontend.widgets.historical_trends import HistoricalTrends
 from blobs_project.frontend.widgets.tank_diagram import TankDiagram
 from blobs_project.frontend.widgets.trend_preview import TrendPreview
 from blobs_project.translations import tr
@@ -25,7 +24,6 @@ class VisualizationFrame(QFrame):
         self._nav_buttons: list[QPushButton] = []
         self._tank_diagram = TankDiagram()
         self._trend_preview = TrendPreview()
-        self._historical_trends = HistoricalTrends()
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -36,7 +34,6 @@ class VisualizationFrame(QFrame):
         layout.addWidget(self._stack, 1)
         self._add_page(self._tank_diagram)
         self._add_page(self._trend_preview)
-        self._add_page(self._historical_trends)
         self._select_page(0)
 
     def update_process_data(self, regulation_values: RegulationValues) -> None:
@@ -57,7 +54,7 @@ class VisualizationFrame(QFrame):
     def _build_nav_bar(self) -> QHBoxLayout:
         nav_bar = QHBoxLayout()
         nav_bar.setSpacing(8)
-        for index, key in enumerate(("nav.overview", "nav.chart", "nav.historical")):
+        for index, key in enumerate(("nav.overview", "nav.chart")):
             nav_bar.addWidget(self._build_nav_button(index, tr(key)))
         nav_bar.addStretch()
         return nav_bar
