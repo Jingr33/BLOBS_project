@@ -55,6 +55,13 @@ STYLE_SHEET = f"""
     QLabel#title {{ font-size: 35px; font-weight: 700; }}
     QLabel#muted {{ color: {config.MUTED}; }}
     QLabel#profile {{ color: {config.MUTED}; font-size: 15px; }}
+    QLabel#clockTime {{
+        color: {config.CYAN};
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 2px;
+    }}
+    QLabel#clockDate {{ color: {config.MUTED}; font-size: 13px; }}
     QPushButton {{
         background: {config.BUTTON_BACKGROUND};
         border: 1px solid {config.BUTTON_BORDER};

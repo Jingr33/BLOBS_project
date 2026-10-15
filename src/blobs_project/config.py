@@ -7,6 +7,7 @@ WINDOW_WIDTH: Final = 1280
 WINDOW_HEIGHT: Final = 700
 LOGO_HEIGHT: Final = 64
 TICK_INTERVAL_MS: Final = 100
+CLOCK_INTERVAL_MS: Final = 1000
 
 # application main colors
 BACKGROUND: Final = "#0b1220"

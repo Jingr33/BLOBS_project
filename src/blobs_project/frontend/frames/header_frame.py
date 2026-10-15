@@ -6,6 +6,7 @@ from blobs_project import config
 from blobs_project.frontend.actions import ActionId, ActionPlace, visible_actions
 from blobs_project.frontend.assets import LOGO_PATH
 from blobs_project.frontend.helpers.qt_helper import QtHelper
+from blobs_project.frontend.widgets.clock_widget import ClockWidget
 from blobs_project.translations import tr
 
 
@@ -27,6 +28,8 @@ class HeaderFrame(QFrame):
         title_box.addWidget(QtHelper.make_label(tr("header.title"), "title"))
         title_box.setContentsMargins(30, 0, 0, 0)
         layout.addLayout(title_box)
+        layout.addStretch()
+        layout.addWidget(ClockWidget())
         layout.addStretch()
         self._add_actions(layout)
 
