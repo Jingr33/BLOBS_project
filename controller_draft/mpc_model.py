@@ -33,6 +33,7 @@ def pump_voltage_from_flow(Q: float, p: PlantParams) -> float:
  
  
 def get_discrete_model(p: PlantParams, target_h_L: float, Ts: float):
+    target_h_L = max(target_h_L, 1e-4) 
     Q_eq = outflow(target_h_L, p.c_L)
     h_H_eq = (Q_eq / p.c_H) ** 2 / (2.0 * g)
     u_eq = pump_voltage_from_flow(Q_eq, p)
