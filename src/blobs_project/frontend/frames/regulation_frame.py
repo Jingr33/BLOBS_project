@@ -96,6 +96,7 @@ class RegulationFrame(QFrame):
         grid.setVerticalSpacing(8)
         grid.setHorizontalSpacing(12)
         self._power_label = QtHelper.add_metric_row(grid, 0, tr("regulation.power"))
+        self._voltage_label = QtHelper.add_metric_row(grid, 1, tr("regulation.voltage"))
         grid.setColumnStretch(1, 1)
         return grid
 
@@ -113,6 +114,7 @@ class RegulationFrame(QFrame):
         self._power_label.setText(
             f"{regulation_service.regulation_values.pump_power_w:.2f}"
         )
+        self._set_voltage_label()
 
         mode_key = (
             "regulation.desired_levels_profile"
@@ -139,6 +141,15 @@ class RegulationFrame(QFrame):
         )
         self._set_profile_label(regulation_service.profile)
         self._set_alert_label()
+
+    def _set_voltage_label(self) -> None:
+        volts = self._regulation_service.regulation_values.pump_voltage_v
+        if self._regulation_service.pump_at_limit:
+            self._voltage_label.setText(tr("regulation.voltage_limit", value=volts))
+            self._voltage_label.setStyleSheet(f"color: {config.ORANGE};")
+        else:
+            self._voltage_label.setText(f"{volts:.2f}")
+            self._voltage_label.setStyleSheet("")
 
     def _set_alert_label(self) -> None:
         fault = self._regulation_service.fault

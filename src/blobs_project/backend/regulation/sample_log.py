@@ -13,6 +13,7 @@ class Sample:
     tank2_actual_cm: float
     flow_l_min: float = 0.0
     pump_power_w: float = 0.0
+    pump_voltage_v: float = 0.0
 
 
 class SampleLog:
@@ -26,6 +27,7 @@ class SampleLog:
         tank2_actual_cm: float,
         flow_l_min: float = 0.0,
         pump_power_w: float = 0.0,
+        pump_voltage_v: float = 0.0,
     ) -> None:
         self._samples.append(
             Sample(
@@ -34,6 +36,7 @@ class SampleLog:
                 tank2_actual_cm,
                 flow_l_min,
                 pump_power_w,
+                pump_voltage_v,
             )
         )
 

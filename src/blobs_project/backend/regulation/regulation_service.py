@@ -6,6 +6,7 @@ import math
 from blobs_project import config
 from blobs_project.backend.dtos.regulation_values import RegulationValues
 from blobs_project.backend.hardware import HardwareError, SimulatedDAQ, Tower
+from blobs_project.backend.statistics import RunStatistics, run_statistics
 from blobs_project.backend.timekeeping import Stopwatch
 
 from .controllers import PIRegulationController, RegulationControllerBase
@@ -51,6 +52,8 @@ class RegulationService:
         self._since_control_s = 0.0
         self._invalid_samples = 0
         self._fault: str | None = None
+        self._statistics = run_statistics(())
+        self._statistics_key: tuple[int, float] = (0, 0.0)
         self._regulation_active = False
         self._self_driven_active = False
         self._profile_finished = False
@@ -74,6 +77,24 @@ class RegulationService:
     def fault(self) -> str | None:
         """Return why the last run was stopped by the service, or ``None``."""
         return self._fault
+
+    @property
+    def statistics(self) -> RunStatistics:
+        """Return the statistics of the current or last run."""
+        samples = self._sample_log.samples
+        key = (len(samples), samples[-1].time_s if samples else 0.0)
+        if key != self._statistics_key:
+            self._statistics = run_statistics(samples)
+            self._statistics_key = key
+        return self._statistics
+
+    @property
+    def pump_at_limit(self) -> bool:
+        """Return whether a running controller output is at its lower or upper limit."""
+        if not self.is_running:
+            return False
+        u = self.regulation_values.pump_voltage_v
+        return u <= config.PI_MIN_V or u >= config.TOWER_PUMP_MAX_V
 
     @property
     def overflow_warning(self) -> bool:
@@ -285,6 +306,7 @@ class RegulationService:
             return
         self.regulation_values.flow_l_min = lower_outflow_l_min(level_cm)
         self.regulation_values.pump_power_w = pump_power_w(applied)
+        self.regulation_values.pump_voltage_v = applied
 
     def _stop_on_fault(self, reason: str) -> None:
         """Stop the run, the pump to 0 V, and remember ``reason``."""
@@ -323,6 +345,7 @@ class RegulationService:
             self.regulation_values.tank2_actual_cm,
             self.regulation_values.flow_l_min,
             self.regulation_values.pump_power_w,
+            self.regulation_values.pump_voltage_v,
         )
 
     def _stop_profile_when_finished(self) -> None:

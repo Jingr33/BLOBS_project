@@ -105,6 +105,18 @@ LEVEL_TRIP_CM: Final = 25.0
 TARE_SAMPLES: Final = 10
 TARE_INTERVAL_S: Final = 0.05
 
+# run statistics
+# Setpoint change that starts a new step in the statistics [cm].
+STEP_MIN_CM: Final = 0.1
+# Settling band: percent of the step size, but at least the minimum [cm].
+SETTLING_BAND_PERCENT: Final = 5.0
+SETTLING_BAND_MIN_CM: Final = 0.2
+# Overshoot smaller than this is sensor noise and is not counted [cm].
+OVERSHOOT_MIN_CM: Final = 0.1
+# Efficiency: level within the tolerance [cm], not counting the time after a change.
+EFFICIENCY_TOL_CM: Final = 0.1
+EFFICIENCY_SKIP_S: Final = 120.0
+
 # process estimates from the 7 Oct 2026 measurements
 # Lower-tank outflow coefficient [m^2]; steady flow = c * sqrt(2 g h).
 LOWER_OUTFLOW_COEFF_M2: Final = 1.11327e-05
