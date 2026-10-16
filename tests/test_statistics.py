@@ -138,5 +138,6 @@ def test_statistics_view_lists_the_steps() -> None:
     view.set_statistics(run_statistics(samples_of(levels, 10.0)))
 
     assert view.table.rowCount() == 1
-    cells = [view.table.item(0, column).text() for column in range(6)]
+    items = [view.table.item(0, column) for column in range(6)]
+    cells = [item.text() if item is not None else None for item in items]
     assert cells == ["0", "0.0 → 10.0", "3", "6", "20.0", "8"]
