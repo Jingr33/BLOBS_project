@@ -20,6 +20,8 @@ class FooterFrame(QFrame):
         self.set_status(tr("status.ready"))
         layout.addWidget(self.status_label)
         layout.addStretch()
+        self.connection_label = QLabel()
+        layout.addWidget(self.connection_label)
         self.time_label = QLabel(tr("footer.no_regulation"))
         self.time_label.setObjectName("muted")
         layout.addWidget(self.time_label)
@@ -32,6 +34,12 @@ class FooterFrame(QFrame):
         self.status_label.setText(self._status_text(text))
         color = config.RED if alert else config.GREEN
         self.status_label.setStyleSheet(f"color: {color}; font-weight: 700;")
+
+    def set_connection(self, simulated: bool) -> None:
+        key = "footer.connection_simulated" if simulated else "footer.connection_card"
+        color = config.ORANGE if simulated else config.GREEN
+        self.connection_label.setText(self._status_text(tr(key)))
+        self.connection_label.setStyleSheet(f"color: {color}; font-weight: 700;")
 
     def set_regulation_time(self, elapsed_s: float | None) -> None:
         if elapsed_s is None:

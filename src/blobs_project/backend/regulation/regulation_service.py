@@ -66,6 +66,11 @@ class RegulationService:
         return self._tower
 
     @property
+    def simulated(self) -> bool:
+        """Return whether the tower is the simulated plant, not the NI card."""
+        return isinstance(self._tower.daq, SimulatedDAQ)
+
+    @property
     def fault(self) -> str | None:
         """Return why the last run was stopped by the service, or ``None``."""
         return self._fault

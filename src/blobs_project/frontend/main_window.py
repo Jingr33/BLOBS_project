@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._header)
         layout.addLayout(self._build_content(), 1)
         layout.addWidget(self._footer)
+        self._footer.set_connection(self._regulation_service.simulated)
         self.setCentralWidget(root)
         self._refresh_view()
 

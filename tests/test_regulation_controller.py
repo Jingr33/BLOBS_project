@@ -142,6 +142,12 @@ def test_service_stops_on_hardware_error() -> None:
     assert daq.get_output_voltage(config.TOWER_PUMP_CHANNEL) == 0.0
 
 
+def test_service_reports_a_simulated_tower() -> None:
+    """The default tower is simulated, a tower on a DAQ card is not."""
+    assert RegulationService().simulated
+    assert not make_service(_RecordingController(), MockDAQ()).simulated
+
+
 def test_service_stops_after_repeated_invalid_readings() -> None:
     """Several NaN readings in a row stop the run."""
     daq = MockDAQ()

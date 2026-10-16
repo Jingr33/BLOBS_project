@@ -45,6 +45,11 @@ class Tower:
         self._pump_voltage = 0.0
 
     @property
+    def daq(self) -> DAQ_base:
+        """Return the DAQ the tower reads and writes through."""
+        return self._daq
+
+    @property
     def pump_voltage(self) -> float:
         """Return the last pump voltage that was actually written."""
         return self._pump_voltage

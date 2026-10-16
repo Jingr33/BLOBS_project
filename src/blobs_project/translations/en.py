@@ -52,6 +52,8 @@ STRINGS: Final[dict[str, str]] = {
     "tank.lower_label": "T2 (lower)",
     "common.value_cm": "{value} cm",
     "footer.no_regulation": "no regulation is running",
+    "footer.connection_card": "NI card connected",
+    "footer.connection_simulated": "Simulation: NI card not available",
     "footer.regulation_time": "Regulation: {time}",
     "footer.remaining_time": "Remaining: {time}",
     "diagram.pump": "P",
