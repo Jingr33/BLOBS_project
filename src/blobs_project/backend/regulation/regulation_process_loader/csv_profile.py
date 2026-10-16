@@ -1,15 +1,19 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from blobs_project import config
 
+from .csv_cells import is_number, parse_number, split_cells
 from .csv_profile_error import CsvProfileError
 
 
 @dataclass(frozen=True)
 class CsvProfile:
+    """Scenario of desired levels, each held for ``step_s`` seconds."""
+
     tank2_levels: tuple[float, ...]
+    step_s: float = config.PROFILE_STEP_S
 
     @property
     def row_count(self) -> int:
@@ -17,7 +21,11 @@ class CsvProfile:
 
     @property
     def duration_s(self) -> float:
-        return self.row_count * config.PROFILE_SAMPLE_INTERVAL_S
+        return self.row_count * self.step_s
+
+    def with_step(self, step_s: float) -> CsvProfile:
+        """Return the same levels, each held for ``step_s`` seconds."""
+        return replace(self, step_s=step_s)
 
     @classmethod
     def from_text(cls, text: str) -> CsvProfile:
@@ -25,10 +33,10 @@ class CsvProfile:
         skipped_header = False
 
         for line_number, line in enumerate(text.splitlines(), start=1):
-            cells = cls._split_cells(line)
+            cells = split_cells(line)
             if not cells:
                 continue
-            if not all(cls._is_number(cell) for cell in cells):
+            if not all(is_number(cell) for cell in cells):
                 if not tank2_values and not skipped_header:
                     skipped_header = True
                     continue
@@ -37,7 +45,7 @@ class CsvProfile:
                 )
             if len(cells) != 1:
                 raise CsvProfileError(f"line {line_number}: expected 1 column")
-            level = float(cells[0])
+            level = parse_number(cells[0])
             low, high = config.SETPOINT_MIN_CM, config.SETPOINT_MAX_CM
             if not low <= level <= high:
                 raise CsvProfileError(
@@ -50,22 +58,9 @@ class CsvProfile:
         return cls(tuple(tank2_values))
 
     def desired_at(self, elapsed_s: float) -> float:
-        if elapsed_s <= 0:
-            index = 0
-        else:
-            index = int(elapsed_s / config.PROFILE_SAMPLE_INTERVAL_S)
-        index = min(index, self.row_count - 1)
-        return self.tank2_levels[index]
+        return self.tank2_levels[self.step_at(elapsed_s)]
 
-    @staticmethod
-    def _split_cells(line: str) -> list[str]:
-        normalized = line.strip().replace(";", ",").replace("\t", ",")
-        return [cell.strip() for cell in normalized.split(",") if cell.strip()]
-
-    @staticmethod
-    def _is_number(cell: str) -> bool:
-        try:
-            float(cell)
-        except ValueError:
-            return False
-        return True
+    def step_at(self, elapsed_s: float) -> int:
+        """Return the index of the step that is active at ``elapsed_s``."""
+        index = int(elapsed_s / self.step_s) if elapsed_s > 0 else 0
+        return min(index, self.row_count - 1)

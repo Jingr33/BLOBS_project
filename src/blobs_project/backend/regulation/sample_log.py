@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from blobs_project import config
@@ -42,6 +43,11 @@ class SampleLog:
 
     def clear(self) -> None:
         self._samples.clear()
+
+    def load(self, samples: Sequence[Sample]) -> None:
+        """Replace the log with ``samples``, e.g. a run imported from CSV."""
+        self._samples.clear()
+        self._samples.extend(samples)
 
     def __len__(self) -> int:
         return len(self._samples)

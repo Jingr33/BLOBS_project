@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
+    QDoubleSpinBox,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -65,6 +66,7 @@ class RegulationFrame(QFrame):
             tr("regulation.start_automatic"), "primary", self._toggle_automatic
         )
         layout.addLayout(self._build_action_row())
+        layout.addLayout(self._build_step_row())
         self._profile_label = QtHelper.make_label(
             tr("regulation.profile_missing"), "profile"
         )
@@ -89,6 +91,21 @@ class RegulationFrame(QFrame):
             )
             row.addWidget(import_button, 1)
         row.addWidget(self._automatic_button, 2)
+        return row
+
+    def _build_step_row(self) -> QHBoxLayout:
+        row = QHBoxLayout()
+        row.addWidget(QtHelper.make_caption(tr("regulation.step_duration")))
+        self._step_spin = QDoubleSpinBox()
+        self._step_spin.setRange(0.5, 60.0)
+        self._step_spin.setDecimals(1)
+        self._step_spin.setSingleStep(0.5)
+        self._step_spin.setKeyboardTracking(False)
+        self._step_spin.setValue(self._regulation_service.step_s / 60.0)
+        self._step_spin.valueChanged.connect(
+            lambda minutes: self._regulation_service.set_step_s(minutes * 60.0)
+        )
+        row.addWidget(self._step_spin)
         return row
 
     def _build_pump_grid(self) -> QGridLayout:
@@ -139,6 +156,11 @@ class RegulationFrame(QFrame):
             regulation_service.profile is not None
             and not regulation_service.regulation_active
         )
+        self._step_spin.setEnabled(not regulation_service.self_driven_active)
+        if not self._step_spin.hasFocus():
+            self._step_spin.blockSignals(True)
+            self._step_spin.setValue(regulation_service.step_s / 60.0)
+            self._step_spin.blockSignals(False)
         self._set_profile_label(regulation_service.profile)
         self._set_alert_label()
 
@@ -166,13 +188,15 @@ class RegulationFrame(QFrame):
         if profile is None:
             self._profile_label.setText(tr("regulation.profile_missing"))
             return
-        self._profile_label.setText(
-            tr(
-                "regulation.profile_loaded",
-                rows=profile.row_count,
-                duration=profile.duration_s,
-            )
-        )
+        n = profile.row_count
+        step = self._regulation_service.profile_step
+        if step is None:
+            minutes, total = profile.step_s / 60.0, profile.duration_s / 60.0
+            text = tr("regulation.profile_loaded", rows=n, step=minutes, total=total)
+        else:
+            level = profile.tank2_levels[step]
+            text = tr("regulation.profile_step", step=step + 1, rows=n, level=level)
+        self._profile_label.setText(text)
 
     def _toggle_regulation(self) -> None:
         self._regulation_service.toggle_regulation()

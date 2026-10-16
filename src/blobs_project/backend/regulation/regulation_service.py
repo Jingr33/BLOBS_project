@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
+from collections.abc import Sequence
 
 from blobs_project import config
 from blobs_project.backend.dtos.regulation_values import RegulationValues
@@ -13,7 +14,7 @@ from .controllers import PIRegulationController, RegulationControllerBase
 from .level_filter import LevelFilter
 from .profile_required_error import ProfileRequiredError
 from .regulation_process_loader import CsvProfile
-from .sample_log import SampleLog
+from .sample_log import Sample, SampleLog
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ class RegulationService:
         self._since_control_s = 0.0
         self._invalid_samples = 0
         self._fault: str | None = None
+        self._step_s = config.PROFILE_STEP_S
         self._statistics = run_statistics(())
         self._statistics_key: tuple[int, float] = (0, 0.0)
         self._regulation_active = False
@@ -158,8 +160,39 @@ class RegulationService:
             * 100.0
         )
 
+    @property
+    def step_s(self) -> float:
+        """Return how long each scenario level is held [s]."""
+        return self._step_s
+
+    @property
+    def profile_step(self) -> int | None:
+        """Return the 0-based scenario step being run, or ``None``."""
+        if not self._self_driven_active or self._profile is None:
+            return None
+        return self._profile.step_at(self._stopwatch.elapsed_s)
+
     def set_profile(self, profile: CsvProfile | None) -> None:
-        self._profile = profile
+        self._profile = None if profile is None else profile.with_step(self._step_s)
+
+    def set_step_s(self, step_s: float) -> None:
+        """Hold each scenario level for ``step_s``; ignored while a scenario runs."""
+        if self._self_driven_active:
+            return
+        self._step_s = step_s
+        if self._profile is not None:
+            self._profile = self._profile.with_step(step_s)
+
+    def load_history(self, samples: Sequence[Sample]) -> None:
+        """Show a recorded run in the chart and statistics.
+
+        Raises ``RuntimeError`` while a run is active.
+        """
+        if self.is_running:
+            raise RuntimeError("stop the regulation before loading a run")
+        self._sample_log.load(samples)
+        self._chart_started = True
+        self._profile_finished = False
 
     def toggle_regulation(self) -> None:
         if self._regulation_active:
@@ -328,12 +361,11 @@ class RegulationService:
     def _full_profile_points(self) -> list[tuple[float, float]]:
         if self._profile is None:
             return []
-        interval = config.PROFILE_SAMPLE_INTERVAL_S
-        steps = int(round(self._profile.duration_s / interval))
-        return [
-            (step * interval, self._profile.desired_at(step * interval))
-            for step in range(steps + 1)
-        ]
+        step_s = self._profile.step_s
+        points = []
+        for index, level in enumerate(self._profile.tank2_levels):
+            points += [(index * step_s, level), ((index + 1) * step_s, level)]
+        return points
 
     def _record_sample(self) -> None:
         if not self._stopwatch.sample_due:

@@ -5,7 +5,7 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PyQt6.QtWidgets import QApplication, QDoubleSpinBox, QLabel, QPushButton, QWidget
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
 
 from blobs_project import config
 from blobs_project.backend.csv_management import CsvService
@@ -19,6 +19,7 @@ from blobs_project.backend.regulation import (
 from blobs_project.frontend.actions import ActionDispatcher, ActionId
 from blobs_project.frontend.frames.footer_frame import FooterFrame
 from blobs_project.frontend.frames.regulation_frame import RegulationFrame
+from blobs_project.frontend.widgets.tank_control import TankControl
 
 _APP = QApplication.instance() or QApplication([])
 
@@ -181,8 +182,9 @@ def test_profile_rejects_nan_level(tmp_path: Path) -> None:
 
 def test_desired_spin_box_allows_only_the_setpoint_range() -> None:
     frame = RegulationFrame(RegulationService())
-    spin = frame.findChild(QDoubleSpinBox)
-    assert spin is not None
+    control = frame.findChild(TankControl)
+    assert control is not None
+    spin = control.desired_spin
 
     assert spin.minimum() == config.SETPOINT_MIN_CM
     assert spin.maximum() == config.SETPOINT_MAX_CM
