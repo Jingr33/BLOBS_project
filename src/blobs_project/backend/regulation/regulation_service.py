@@ -30,6 +30,11 @@ def lower_outflow_l_min(level_cm: float) -> float:
     return q_m3_s * 60000.0
 
 
+def clamp_setpoint_cm(level_cm: float) -> float:
+    """Return ``level_cm`` limited to the allowed setpoint range."""
+    return min(max(level_cm, config.SETPOINT_MIN_CM), config.SETPOINT_MAX_CM)
+
+
 class RegulationService:
     """Run the level control loop on a ``Tower`` and keep its log and profile."""
 
@@ -64,6 +69,11 @@ class RegulationService:
     def fault(self) -> str | None:
         """Return why the last run was stopped by the service, or ``None``."""
         return self._fault
+
+    @property
+    def overflow_warning(self) -> bool:
+        """Return whether the lower tank is close to overflowing."""
+        return self.regulation_values.tank2_actual_cm >= config.LEVEL_WARNING_CM
 
     def open(self) -> None:
         """Open the tower; the pump starts at 0 V."""
@@ -147,6 +157,21 @@ class RegulationService:
         self._reset_run_state()
         self._self_driven_active = True
 
+    def emergency_stop(self) -> None:
+        """Stop any run and the pump at once."""
+        self._stop_on_fault("emergency stop")
+
+    def tare(self) -> float:
+        """Zero the level sensor on the empty tank and return the new zero [V].
+
+        Raises ``RuntimeError`` while a run is active, ``HardwareError`` if the
+        card fails.
+        """
+        if self.is_running:
+            raise RuntimeError("stop the regulation before taring")
+        self._level_filter.clear()
+        return self._tower.tare(config.TARE_SAMPLES, config.TARE_INTERVAL_S)
+
     def force_reset(self) -> None:
         self._regulation_active = False
         self._self_driven_active = False
@@ -156,15 +181,21 @@ class RegulationService:
         self._stop_pump()
 
     def tick(self, dt_s: float) -> None:
-        if not self.is_running or dt_s <= 0:
+        if dt_s <= 0:
+            return
+        self._since_control_s += dt_s
+        due = self._since_control_s >= config.CONTROL_PERIOD_S
+        if not self.is_running:
             self.regulation_values.reset_flow()
             self.regulation_values.reset_pump()
+            if due:
+                self._since_control_s = 0.0
+                self._monitor_step()
             return
         self._stopwatch.advance(dt_s)
         if self._self_driven_active:
             self._apply_profile_desired()
-        self._since_control_s += dt_s
-        if self._since_control_s >= config.CONTROL_PERIOD_S:
+        if due:
             self._control_step(self._since_control_s)
             self._since_control_s = 0.0
             if not self.is_running:
@@ -212,6 +243,18 @@ class RegulationService:
             self._stopwatch.elapsed_s
         )
 
+    def _monitor_step(self) -> None:
+        """Read the level while no run is active; a lost card is reported once."""
+        try:
+            level_cm = self._level_filter(self._tower.read_level_cm())
+        except HardwareError as e:
+            if self._fault is None:
+                logger.error("level reading failed: %s", e)
+                self._fault = f"tower error: {e}"
+            return
+        if math.isfinite(level_cm):
+            self.regulation_values.tank2_actual_cm = level_cm
+
     def _control_step(self, dt_s: float) -> None:
         """Read the level, run the controller and drive the pump."""
         try:
@@ -224,14 +267,17 @@ class RegulationService:
                     )
                 return
             self._invalid_samples = 0
-            volts = self._controller.compute(
-                dt_s, self.regulation_values.tank2_desired_cm, level_cm
-            )
+            self.regulation_values.tank2_actual_cm = level_cm
+            if level_cm >= config.LEVEL_TRIP_CM:
+                limit = config.LEVEL_TRIP_CM
+                self._stop_on_fault(f"level {level_cm:.1f} cm reached {limit} cm")
+                return
+            desired_cm = clamp_setpoint_cm(self.regulation_values.tank2_desired_cm)
+            volts = self._controller.compute(dt_s, desired_cm, level_cm)
             applied = self._tower.set_pump_voltage(volts)
         except (HardwareError, ValueError) as e:
             self._stop_on_fault(f"tower error: {e}")
             return
-        self.regulation_values.tank2_actual_cm = level_cm
         self.regulation_values.flow_l_min = lower_outflow_l_min(level_cm)
         self.regulation_values.pump_power_w = pump_power_w(applied)
 

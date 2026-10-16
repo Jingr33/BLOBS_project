@@ -52,7 +52,14 @@ class RegulationFrame(QFrame):
         self._regulation_button = self._build_button(
             tr("regulation.start_regulation"), "primary", self._toggle_regulation
         )
-        layout.addWidget(self._regulation_button)
+        self._stop_button = self._build_button(
+            tr("regulation.emergency_stop"), "emergency", self._emergency_stop
+        )
+        run_row = QHBoxLayout()
+        run_row.setSpacing(8)
+        run_row.addWidget(self._regulation_button, 1)
+        run_row.addWidget(self._stop_button, 1)
+        layout.addLayout(run_row)
         layout.addSpacing(18)
         self._automatic_button = self._build_button(
             tr("regulation.start_automatic"), "primary", self._toggle_automatic
@@ -62,6 +69,10 @@ class RegulationFrame(QFrame):
             tr("regulation.profile_missing"), "profile"
         )
         layout.addWidget(self._profile_label)
+        self._alert_label = QtHelper.make_label("", "alert")
+        self._alert_label.setWordWrap(True)
+        self._alert_label.setVisible(False)
+        layout.addWidget(self._alert_label)
 
         self._tank2_control.desired_changed.connect(self._set_desired_level)
 
@@ -127,6 +138,18 @@ class RegulationFrame(QFrame):
             and not regulation_service.regulation_active
         )
         self._set_profile_label(regulation_service.profile)
+        self._set_alert_label()
+
+    def _set_alert_label(self) -> None:
+        fault = self._regulation_service.fault
+        if fault is not None:
+            text = tr("regulation.fault", reason=fault)
+        elif self._regulation_service.overflow_warning:
+            text = tr("regulation.overflow_warning")
+        else:
+            text = ""
+        self._alert_label.setText(text)
+        self._alert_label.setVisible(bool(text))
 
     def _set_profile_label(self, profile: CsvProfile | None) -> None:
         if profile is None:
@@ -142,6 +165,10 @@ class RegulationFrame(QFrame):
 
     def _toggle_regulation(self) -> None:
         self._regulation_service.toggle_regulation()
+        self.sync()
+
+    def _emergency_stop(self) -> None:
+        self._regulation_service.emergency_stop()
         self.sync()
 
     def _toggle_automatic(self) -> None:

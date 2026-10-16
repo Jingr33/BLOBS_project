@@ -67,7 +67,7 @@ def test_self_driven_replaces_manual_regulation(tmp_path: Path) -> None:
 
 def test_self_driven_stops_when_profile_finishes(tmp_path: Path) -> None:
     path = tmp_path / "profile.csv"
-    path.write_text("25.0\n25.0\n25.0\n", encoding="utf-8")
+    path.write_text("20.0\n20.0\n20.0\n", encoding="utf-8")
     regulation_service = RegulationService()
     regulation_service.set_profile(ProfileLoader.load_profile(path))
     regulation_service.toggle_self_driven()
@@ -77,7 +77,7 @@ def test_self_driven_stops_when_profile_finishes(tmp_path: Path) -> None:
 
     assert not regulation_service.self_driven_active
     assert regulation_service.profile_finished
-    assert regulation_service.regulation_values.tank2_desired_cm == pytest.approx(25.0)
+    assert regulation_service.regulation_values.tank2_desired_cm == pytest.approx(20.0)
     assert regulation_service.elapsed_s >= 3.0
 
 

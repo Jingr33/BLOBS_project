@@ -94,6 +94,13 @@ STYLE_SHEET = f"""
         color: {config.MUTED};
         font-weight: 600;
     }}
+    QPushButton#emergency {{
+        background: {config.RED};
+        color: {config.DANGER_TEXT};
+        font-weight: 800;
+        border: 2px solid {config.TEXT};
+    }}
+    QLabel#alert {{ color: {config.RED}; font-weight: 700; }}
     QPushButton#small {{ padding: 6px 10px; }}
     QPushButton#nav {{
         background: transparent;

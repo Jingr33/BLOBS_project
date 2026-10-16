@@ -109,7 +109,10 @@ class MainWindow(QMainWindow):
         self._previous_state = current
         if current == previous:
             return
-        if previous[1] and not current[1]:
+        fault = self._regulation_service.fault
+        if any(previous) and not any(current) and fault is not None:
+            self._footer.set_status(tr("status.fault", reason=fault), alert=True)
+        elif previous[1] and not current[1]:
             key = (
                 "status.profile_finished"
                 if self._regulation_service.profile_finished

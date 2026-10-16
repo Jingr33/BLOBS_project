@@ -91,6 +91,18 @@ LEVEL_MEDIAN_SAMPLES: Final = 5
 # Invalid level readings in a row before the run stops.
 MAX_INVALID_SAMPLES: Final = 5
 
+# safety limits
+# Allowed desired level of the lower tank [cm].
+SETPOINT_MIN_CM: Final = 3.0
+SETPOINT_MAX_CM: Final = 22.0
+# Lower-tank level that warns of overflow [cm].
+LEVEL_WARNING_CM: Final = 23.0
+# Lower-tank level that stops the run and the pump [cm].
+LEVEL_TRIP_CM: Final = 25.0
+# Empty-tank readings averaged by the sensor tare.
+TARE_SAMPLES: Final = 10
+TARE_INTERVAL_S: Final = 0.05
+
 # process estimates from the 7 Oct 2026 measurements
 # Lower-tank outflow coefficient [m^2]; steady flow = c * sqrt(2 g h).
 LOWER_OUTFLOW_COEFF_M2: Final = 1.11327e-05

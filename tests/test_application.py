@@ -64,7 +64,12 @@ def test_header_offers_export_csv_before_force_reset() -> None:
 
     labels = [button.text() for button in header.findChildren(QPushButton)]
 
-    assert labels == ["Export CSV data", "Force reset", "Download CSV template"]
+    assert labels == [
+        "Export CSV data",
+        "Force reset",
+        "Download CSV template",
+        "Tare",
+    ]
 
     window.close()
     app.processEvents()
@@ -118,6 +123,7 @@ def test_regulation_frame_offers_regulation_import_and_automatic() -> None:
 
     assert labels == [
         "Start regulation",
+        "EMERGENCY STOP",
         "Import CSV data",
         "Start automatic regulation",
     ]
@@ -155,7 +161,7 @@ def test_regulation_toggle_switches_between_start_and_stop() -> None:
 
     buttons = frame.findChildren(QPushButton)
     regulation = buttons[0]
-    automatic = buttons[2]
+    automatic = buttons[3]
     assert regulation.text() == "Start regulation"
     assert regulation.objectName() == "primary"
     assert automatic.text() == "Start automatic regulation"

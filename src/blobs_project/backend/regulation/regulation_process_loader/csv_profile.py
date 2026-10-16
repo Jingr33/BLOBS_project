@@ -37,7 +37,13 @@ class CsvProfile:
                 )
             if len(cells) != 1:
                 raise CsvProfileError(f"line {line_number}: expected 1 column")
-            tank2_values.append(float(cells[0]))
+            level = float(cells[0])
+            low, high = config.SETPOINT_MIN_CM, config.SETPOINT_MAX_CM
+            if not low <= level <= high:
+                raise CsvProfileError(
+                    f"line {line_number}: level {level} cm is outside {low}-{high} cm"
+                )
+            tank2_values.append(level)
 
         if not tank2_values:
             raise CsvProfileError("profile contains no rows")
