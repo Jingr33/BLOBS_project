@@ -2,17 +2,19 @@ from __future__ import annotations
 
 import logging
 import math
+from collections.abc import Sequence
 
 from blobs_project import config
 from blobs_project.backend.dtos.regulation_values import RegulationValues
 from blobs_project.backend.hardware import HardwareError, SimulatedDAQ, Tower
+from blobs_project.backend.statistics import RunStatistics, run_statistics
 from blobs_project.backend.timekeeping import Stopwatch
 
 from .controllers import PIRegulationController, RegulationControllerBase
 from .level_filter import LevelFilter
 from .profile_required_error import ProfileRequiredError
 from .regulation_process_loader import CsvProfile
-from .sample_log import SampleLog
+from .sample_log import Sample, SampleLog
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,9 @@ class RegulationService:
         self._since_control_s = 0.0
         self._invalid_samples = 0
         self._fault: str | None = None
+        self._step_s = config.PROFILE_STEP_S
+        self._statistics = run_statistics(())
+        self._statistics_key: tuple[int, float] = (0, 0.0)
         self._regulation_active = False
         self._self_driven_active = False
         self._profile_finished = False
@@ -74,6 +79,24 @@ class RegulationService:
     def fault(self) -> str | None:
         """Return why the last run was stopped by the service, or ``None``."""
         return self._fault
+
+    @property
+    def statistics(self) -> RunStatistics:
+        """Return the statistics of the current or last run."""
+        samples = self._sample_log.samples
+        key = (len(samples), samples[-1].time_s if samples else 0.0)
+        if key != self._statistics_key:
+            self._statistics = run_statistics(samples)
+            self._statistics_key = key
+        return self._statistics
+
+    @property
+    def pump_at_limit(self) -> bool:
+        """Return whether a running controller output is at its lower or upper limit."""
+        if not self.is_running:
+            return False
+        u = self.regulation_values.pump_voltage_v
+        return u <= config.PI_MIN_V or u >= config.TOWER_PUMP_MAX_V
 
     @property
     def overflow_warning(self) -> bool:
@@ -137,8 +160,39 @@ class RegulationService:
             * 100.0
         )
 
+    @property
+    def step_s(self) -> float:
+        """Return how long each scenario level is held [s]."""
+        return self._step_s
+
+    @property
+    def profile_step(self) -> int | None:
+        """Return the 0-based scenario step being run, or ``None``."""
+        if not self._self_driven_active or self._profile is None:
+            return None
+        return self._profile.step_at(self._stopwatch.elapsed_s)
+
     def set_profile(self, profile: CsvProfile | None) -> None:
-        self._profile = profile
+        self._profile = None if profile is None else profile.with_step(self._step_s)
+
+    def set_step_s(self, step_s: float) -> None:
+        """Hold each scenario level for ``step_s``; ignored while a scenario runs."""
+        if self._self_driven_active:
+            return
+        self._step_s = step_s
+        if self._profile is not None:
+            self._profile = self._profile.with_step(step_s)
+
+    def load_history(self, samples: Sequence[Sample]) -> None:
+        """Show a recorded run in the chart and statistics.
+
+        Raises ``RuntimeError`` while a run is active.
+        """
+        if self.is_running:
+            raise RuntimeError("stop the regulation before loading a run")
+        self._sample_log.load(samples)
+        self._chart_started = True
+        self._profile_finished = False
 
     def toggle_regulation(self) -> None:
         if self._regulation_active:
@@ -285,6 +339,7 @@ class RegulationService:
             return
         self.regulation_values.flow_l_min = lower_outflow_l_min(level_cm)
         self.regulation_values.pump_power_w = pump_power_w(applied)
+        self.regulation_values.pump_voltage_v = applied
 
     def _stop_on_fault(self, reason: str) -> None:
         """Stop the run, the pump to 0 V, and remember ``reason``."""
@@ -306,12 +361,11 @@ class RegulationService:
     def _full_profile_points(self) -> list[tuple[float, float]]:
         if self._profile is None:
             return []
-        interval = config.PROFILE_SAMPLE_INTERVAL_S
-        steps = int(round(self._profile.duration_s / interval))
-        return [
-            (step * interval, self._profile.desired_at(step * interval))
-            for step in range(steps + 1)
-        ]
+        step_s = self._profile.step_s
+        points = []
+        for index, level in enumerate(self._profile.tank2_levels):
+            points += [(index * step_s, level), ((index + 1) * step_s, level)]
+        return points
 
     def _record_sample(self) -> None:
         if not self._stopwatch.sample_due:
@@ -323,6 +377,7 @@ class RegulationService:
             self.regulation_values.tank2_actual_cm,
             self.regulation_values.flow_l_min,
             self.regulation_values.pump_power_w,
+            self.regulation_values.pump_voltage_v,
         )
 
     def _stop_profile_when_finished(self) -> None:

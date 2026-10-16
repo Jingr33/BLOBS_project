@@ -6,7 +6,11 @@ from PyQt6.QtWidgets import QFileDialog, QWidget
 
 from blobs_project.backend.csv_management import CsvService
 from blobs_project.backend.hardware import HardwareError
-from blobs_project.backend.regulation import RegulationService, SampleExportStatus
+from blobs_project.backend.regulation import (
+    CsvProfile,
+    RegulationService,
+    SampleExportStatus,
+)
 from blobs_project.translations import tr
 
 from .action_id import ActionId
@@ -51,15 +55,18 @@ class ActionDispatcher:
         )
         if not path:
             return None
-        profile = self._csv_service.load_profile(path)
-        if profile is None:
+        loaded = self._csv_service.load(path)
+        if loaded is None:
             return tr("status.profile_invalid")
-        self._regulation_service.set_profile(profile)
-        return tr(
-            "status.profile_loaded",
-            rows=profile.row_count,
-            duration=profile.duration_s,
-        )
+        if isinstance(loaded, CsvProfile):
+            self._regulation_service.set_profile(loaded)
+            return tr("status.profile_loaded", rows=loaded.row_count)
+        try:
+            self._regulation_service.load_history(loaded)
+        except RuntimeError:
+            return tr("status.history_running")
+        minutes = (loaded[-1].time_s - loaded[0].time_s) / 60.0
+        return tr("status.history_loaded", minutes=minutes)
 
     def _export_csv(self, parent: QWidget) -> str | None:
         path, _ = QFileDialog.getSaveFileName(

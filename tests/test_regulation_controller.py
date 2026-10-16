@@ -160,3 +160,33 @@ def test_service_stops_after_repeated_invalid_readings() -> None:
 
     assert not service.is_running
     assert service.fault is not None
+
+
+def test_service_records_the_pump_voltage() -> None:
+    """The applied pump voltage is shown and stored with every sample."""
+    service = make_service(_RecordingController(5.0), MockDAQ())
+    service.toggle_regulation()
+
+    for _ in range(25):
+        service.tick(0.1)
+
+    assert service.regulation_values.pump_voltage_v == 5.0
+    assert service.sample_log.samples[-1].pump_voltage_v == 5.0
+    assert not service.pump_at_limit
+
+
+def test_service_reports_the_output_at_its_limit() -> None:
+    """An output clamped to the pump maximum is reported as at the limit."""
+    service = make_service(_RecordingController(9.0), MockDAQ())
+    service.toggle_regulation()
+
+    for _ in range(5):
+        service.tick(0.1)
+
+    assert service.regulation_values.pump_voltage_v == config.TOWER_PUMP_MAX_V
+    assert service.pump_at_limit
+
+    service.toggle_regulation()
+
+    assert service.regulation_values.pump_voltage_v == 0.0
+    assert not service.pump_at_limit

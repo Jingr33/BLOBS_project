@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from blobs_project import config
 from blobs_project.backend.regulation import RegulationService
 from blobs_project.backend.regulation.regulation_process_loader import (
     CsvExporter,
@@ -20,7 +21,7 @@ def test_csv_profile_accepts_single_column(tmp_path: Path) -> None:
 
     assert profile.row_count == 3
     assert profile.tank2_levels == (10.0, 12.5, 15.0)
-    assert profile.duration_s == pytest.approx(3.0)
+    assert profile.duration_s == pytest.approx(3 * config.PROFILE_STEP_S)
 
 
 def test_csv_profile_skips_a_single_header_row(tmp_path: Path) -> None:
@@ -51,7 +52,7 @@ def test_csv_profile_rejects_file_without_rows() -> None:
 
 
 def test_csv_profile_reads_values_by_elapsed_time() -> None:
-    profile = CsvProfile.from_text("5.0\n10.0\n15.0\n")
+    profile = CsvProfile.from_text("5.0\n10.0\n15.0\n").with_step(1.0)
 
     assert profile.desired_at(0.0) == 5.0
     assert profile.desired_at(1.5) == 10.0
@@ -67,9 +68,9 @@ def test_export_samples_csv_writes_the_recorded_columns(tmp_path: Path) -> None:
 
     assert written is True
     assert path.read_text(encoding="utf-8").splitlines() == [
-        "time_s,tank2_actual_cm",
-        "1.0,19.50",
-        "2.0,21.00",
+        "time_s;desired_cm;actual_cm;pump_voltage_v;pump_power_w;flow_l_min",
+        "1,0;25,00;19,50;0,000;0,000;0,000",
+        "2,0;25,00;21,00;0,000;0,000;0,000",
     ]
 
 
@@ -101,5 +102,7 @@ def test_export_writes_recorded_samples(tmp_path: Path) -> None:
     )
 
     lines = path.read_text(encoding="utf-8").splitlines()
-    assert lines[0] == "time_s,tank2_actual_cm"
+    assert (
+        lines[0] == "time_s;desired_cm;actual_cm;pump_voltage_v;pump_power_w;flow_l_min"
+    )
     assert len(lines) >= 3
