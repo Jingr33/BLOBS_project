@@ -1,28 +1,23 @@
-"""
-Interface for Data Aquisition Devices. This inteface can be useful
-to create MockDAQ(DAQ_base) for tests.
-"""
+"""Interface for data acquisition devices, real (``NIDAQ``) or mocked (``MockDAQ``)."""
 
 from abc import ABC, abstractmethod
 
 
 class DAQ_base(ABC):
+    """Raw analog voltage I/O on channels such as ``ai0`` or ``ao1``."""
+
+    @abstractmethod
+    def open(self) -> None:
+        """Connect to the device; raises ``HardwareError`` if that fails."""
+
     @abstractmethod
     def read_voltage(self, channel: str) -> float:
-        pass
+        """Return the voltage on analog input ``channel``."""
 
     @abstractmethod
     def write_voltage(self, channel: str, value: float) -> None:
-        pass
-
-    @abstractmethod
-    def read_digital(self, channel: str) -> bool:
-        pass
-
-    @abstractmethod
-    def write_digital(self, channel: str, value: bool) -> None:
-        pass
+        """Set analog output ``channel`` to ``value`` volts."""
 
     @abstractmethod
     def close(self) -> None:
-        pass
+        """Release the device; safe to call more than once."""
