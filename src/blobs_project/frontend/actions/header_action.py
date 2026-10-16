@@ -5,5 +5,5 @@ from .action_place import ActionPlace
 
 @dataclass(frozen=True)
 class HeaderAction:
-    place: ActionPlace
+    places: tuple[ActionPlace, ...]
     enabled: bool = True

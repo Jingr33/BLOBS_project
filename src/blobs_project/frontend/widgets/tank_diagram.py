@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import QPointF, QRectF, Qt
-from PyQt6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPen, QPolygonF
+from PyQt6.QtGui import QColor, QPainter, QPen, QPolygonF
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
 from blobs_project import config
+from blobs_project.backend.dtos.regulation_values import RegulationValues
+from blobs_project.frontend.helpers.paint_helper import PaintHelper
 from blobs_project.translations import tr
 
-from .tank_geometry import TankGeometry
+from .tank_geometry import PILL_GAP, PILL_HEIGHT, TankGeometry
 
 ARROW_HALF_WIDTH: float = 8.0
 ARROW_BODY: float = 11.0
 TANK_FILL_INSET: float = 4.0
 MARKER_SIZE: float = 7.0
-PILL_TEXT_PADDING: float = 26.0
 
 
 class TankDiagram(QWidget):
@@ -23,10 +24,16 @@ class TankDiagram(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._tank2_actual_cm = config.TANK_ACTUAL_LEVEL_CM
         self._tank2_desired_cm = config.TANK_DESIRED_LEVEL_CM
+        self._flow_l_min = 0.0
+        self._pump_power_w = 0.0
+        self._total_energy_wh = 0.0
 
-    def set_process_data(self, tank2_actual_cm: float, tank2_desired_cm: float) -> None:
-        self._tank2_actual_cm = tank2_actual_cm
-        self._tank2_desired_cm = tank2_desired_cm
+    def set_process_data(self, regulation_values: RegulationValues) -> None:
+        self._tank2_actual_cm = regulation_values.tank2_actual_cm
+        self._tank2_desired_cm = regulation_values.tank2_desired_cm
+        self._flow_l_min = regulation_values.flow_l_min
+        self._pump_power_w = regulation_values.pump_power_w
+        self._total_energy_wh = regulation_values.total_energy_wh
         self.update()
 
     def paintEvent(self, _event: object) -> None:
@@ -41,19 +48,29 @@ class TankDiagram(QWidget):
         self._draw_level(painter, geometry.tank2)
         self._draw_scale(painter, geometry)
         self._draw_pump(painter, geometry.pump)
-        self._draw_pill(
+        self._draw_flow_readout(painter, geometry.tank2)
+        PaintHelper.draw_energy_pill(
             painter,
-            geometry,
-            geometry.tank1,
+            self._total_energy_wh,
+            12.0,
+            self.height() - PILL_HEIGHT - 12.0,
+            PILL_HEIGHT,
+        )
+        PaintHelper.draw_pill(
+            painter,
             tr("tank.upper_label"),
             config.TANK_UPPER_COLOR,
+            geometry.pill_x,
+            geometry.tank1.center().y(),
+            geometry.pill_height,
         )
-        self._draw_pill(
+        PaintHelper.draw_pill(
             painter,
-            geometry,
-            geometry.tank2,
             tr("tank.lower_label"),
             config.TANK_LOWER_COLOR,
+            geometry.pill_x,
+            geometry.tank2.center().y(),
+            geometry.pill_height,
         )
 
     def _draw_pipes(self, painter: QPainter, geometry: TankGeometry) -> None:
@@ -75,6 +92,14 @@ class TankDiagram(QWidget):
         arrow_color = QColor(config.TANK_PIPE_COLOR)
         self._draw_arrow(painter, QPointF(center_x, geometry.tank1.top()), arrow_color)
         self._draw_arrow(painter, QPointF(center_x, geometry.tank2.top()), arrow_color)
+        flow_color = config.TANK_PUMP_COLOR if self._flow_l_min > 0.0 else config.MUTED
+        self._draw_horizontal_arrow(
+            painter,
+            geometry.pump.right() + 8,
+            center_x - 8,
+            pipe_y,
+            QColor(flow_color),
+        )
 
     @staticmethod
     def _draw_arrow(painter: QPainter, tip: QPointF, color: QColor) -> None:
@@ -83,6 +108,29 @@ class TankDiagram(QWidget):
                 tip,
                 QPointF(tip.x() - ARROW_HALF_WIDTH, tip.y() - ARROW_BODY),
                 QPointF(tip.x() + ARROW_HALF_WIDTH, tip.y() - ARROW_BODY),
+            ]
+        )
+        painter.save()
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(color)
+        painter.drawPolygon(polygon)
+        painter.restore()
+
+    @staticmethod
+    def _draw_horizontal_arrow(
+        painter: QPainter,
+        start_x: float,
+        end_x: float,
+        y: float,
+        color: QColor,
+    ) -> None:
+        if end_x <= start_x:
+            return
+        polygon = QPolygonF(
+            [
+                QPointF(end_x, y),
+                QPointF(end_x - ARROW_BODY, y - ARROW_HALF_WIDTH),
+                QPointF(end_x - ARROW_BODY, y + ARROW_HALF_WIDTH),
             ]
         )
         painter.save()
@@ -178,34 +226,50 @@ class TankDiagram(QWidget):
             )
         painter.restore()
 
-    @staticmethod
-    def _draw_pump(painter: QPainter, pump: QRectF) -> None:
+    def _draw_pump(self, painter: QPainter, pump: QRectF) -> None:
         painter.save()
-        painter.setPen(QPen(QColor(config.TANK_PUMP_COLOR), 2))
+        pump_color = (
+            config.TANK_PUMP_COLOR if self._pump_power_w > 0.0 else config.MUTED
+        )
+        painter.setPen(QPen(QColor(pump_color), 2))
         painter.setBrush(QColor("#173746"))
         painter.drawRoundedRect(pump, 8, 8)
-        painter.setPen(QPen(QColor(config.TANK_PUMP_COLOR), 1))
+        painter.setPen(QPen(QColor(pump_color), 1))
         painter.drawText(pump, Qt.AlignmentFlag.AlignCenter, tr("diagram.pump"))
         painter.restore()
+        self._draw_power_readout(painter, pump, pump_color)
+
+    def _draw_power_readout(self, painter: QPainter, pump: QRectF, color: str) -> None:
+        readout = QRectF(max(8.0, pump.left() - 16), pump.bottom() + 10, 150, 26)
+        self._draw_readout(
+            painter,
+            color,
+            readout,
+            tr("diagram.power_value", value=self._pump_power_w),
+        )
+
+    def _draw_flow_readout(self, painter: QPainter, tank: QRectF) -> None:
+        flow_color = config.TANK_PUMP_COLOR if self._flow_l_min > 0.0 else config.MUTED
+        readout = QRectF(tank.right() + PILL_GAP, tank.bottom() - 26, 150, 26)
+        self._draw_readout(
+            painter,
+            flow_color,
+            readout,
+            tr("diagram.flow_value", value=self._flow_l_min),
+        )
 
     @staticmethod
-    def _draw_pill(
-        painter: QPainter,
-        geometry: TankGeometry,
-        tank: QRectF,
-        text: str,
-        color: str,
+    def _draw_readout(
+        painter: QPainter, pen_color: str, readout: QRectF, text: str
     ) -> None:
-        font = QFont(painter.font())
-        font.setBold(True)
-        width = QFontMetricsF(font).horizontalAdvance(text) + PILL_TEXT_PADDING
-        height = geometry.pill_height
-        rect = QRectF(geometry.pill_x, tank.center().y() - height / 2, width, height)
         painter.save()
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(color))
-        painter.drawRoundedRect(rect, height / 2, height / 2)
-        painter.setFont(font)
-        painter.setPen(QColor(config.PRIMARY_TEXT))
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
+        painter.setPen(QPen(QColor(pen_color), 1))
+        painter.setBrush(QColor("#17263a"))
+        painter.drawRoundedRect(readout, 6, 6)
+        painter.setPen(QColor(config.TEXT))
+        painter.drawText(
+            QRectF(readout.left() + 8, readout.top() + 3, readout.width() - 16, 18),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            text,
+        )
         painter.restore()

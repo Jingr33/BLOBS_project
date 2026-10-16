@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from blobs_project.backend.dtos.regulation_values import RegulationValues
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.frontend.widgets.tank_diagram import TankDiagram
 from blobs_project.frontend.widgets.trend_preview import TrendPreview
@@ -35,17 +36,20 @@ class VisualizationFrame(QFrame):
         self._add_page(self._trend_preview)
         self._select_page(0)
 
-    def update_process_data(
-        self, tank2_actual_cm: float, tank2_desired_cm: float
-    ) -> None:
-        self._tank_diagram.set_process_data(tank2_actual_cm, tank2_desired_cm)
+    def update_process_data(self, regulation_values: RegulationValues) -> None:
+        self._tank_diagram.set_process_data(regulation_values)
+        self._trend_preview.set_total_energy(regulation_values.total_energy_wh)
 
     def update_trend_samples(
         self,
         samples: Sequence[tuple[float, float]] | None,
         desired_samples: Sequence[tuple[float, float]] | None = None,
+        flow_samples: Sequence[tuple[float, float]] | None = None,
+        pump_power_samples: Sequence[tuple[float, float]] | None = None,
     ) -> None:
-        self._trend_preview.set_samples(samples, desired_samples)
+        self._trend_preview.set_samples(
+            samples, desired_samples, flow_samples, pump_power_samples
+        )
 
     def _build_nav_bar(self) -> QHBoxLayout:
         nav_bar = QHBoxLayout()

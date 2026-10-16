@@ -39,12 +39,14 @@ def test_proportional_controller_never_overshoots_the_setpoint() -> None:
 
 def test_service_uses_the_injected_controller() -> None:
     controller = _RecordingController()
-    service = RegulationService(controller)
-    service.set_desired_tank2(10.0)
+    regulation_service = RegulationService(controller)
+    regulation_service.regulation_values.tank2_desired_cm = 10.0
 
-    service.toggle_regulation()
-    service.tick(0.1)
+    regulation_service.toggle_regulation()
+    regulation_service.tick(0.1)
 
     assert controller.reset_count == 1
     assert controller.calls == [(0.1, 10.0, config.TANK_ACTUAL_LEVEL_CM)]
-    assert service.tank2_actual_cm == pytest.approx(config.TANK_ACTUAL_LEVEL_CM + 5.0)
+    assert regulation_service.regulation_values.tank2_actual_cm == pytest.approx(
+        config.TANK_ACTUAL_LEVEL_CM + 5.0
+    )

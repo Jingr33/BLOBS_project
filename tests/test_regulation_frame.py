@@ -12,8 +12,8 @@ from blobs_project.frontend.frames.regulation_frame import RegulationFrame
 _APP = QApplication.instance() or QApplication([])
 
 
-def _frame(service: RegulationService) -> RegulationFrame:
-    frame = RegulationFrame(service)
+def _frame(regulation_service: RegulationService) -> RegulationFrame:
+    frame = RegulationFrame(regulation_service)
     frame.show()
     _APP.processEvents()
     return frame
@@ -21,7 +21,7 @@ def _frame(service: RegulationService) -> RegulationFrame:
 
 def _buttons(frame: RegulationFrame) -> tuple[QPushButton, QPushButton]:
     buttons = frame.findChildren(QPushButton)
-    return buttons[0], buttons[3]
+    return buttons[0], buttons[2]
 
 
 def _profile_label(frame: RegulationFrame) -> QLabel:
@@ -30,74 +30,74 @@ def _profile_label(frame: RegulationFrame) -> QLabel:
     return label
 
 
-def test_self_driven_button_waits_for_a_loaded_profile(tmp_path: Path) -> None:
-    service = RegulationService()
-    frame = _frame(service)
-    regulation, self_driven = _buttons(frame)
+def test_automatic_button_waits_for_a_loaded_profile(tmp_path: Path) -> None:
+    regulation_service = RegulationService()
+    frame = _frame(regulation_service)
+    regulation, automatic = _buttons(frame)
 
-    assert not self_driven.isEnabled()
+    assert not automatic.isEnabled()
     assert _profile_label(frame).text() == "No CSV profile loaded"
     assert regulation.isEnabled()
 
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n21.0\n", encoding="utf-8")
-    service.set_profile(ProfileLoader.load_profile(path))
+    regulation_service.set_profile(ProfileLoader.load_profile(path))
     frame.sync()
 
-    assert self_driven.isEnabled()
+    assert automatic.isEnabled()
     assert _profile_label(frame).text() == "Profile: CSV / 2 rows / 2 s"
 
 
-def test_self_driven_is_disabled_without_a_profile() -> None:
-    service = RegulationService()
-    frame = _frame(service)
-    _, self_driven = _buttons(frame)
+def test_automatic_is_disabled_without_a_profile() -> None:
+    regulation_service = RegulationService()
+    frame = _frame(regulation_service)
+    _, automatic = _buttons(frame)
 
-    assert not self_driven.isEnabled()
+    assert not automatic.isEnabled()
 
-    self_driven.click()
-    assert not service.self_driven_active
+    automatic.click()
+    assert not regulation_service.self_driven_active
 
 
-def test_starting_regulation_disables_self_driven_button(tmp_path: Path) -> None:
-    service = RegulationService()
-    frame = _frame(service)
-    regulation, self_driven = _buttons(frame)
+def test_starting_regulation_disables_automatic_button(tmp_path: Path) -> None:
+    regulation_service = RegulationService()
+    frame = _frame(regulation_service)
+    regulation, automatic = _buttons(frame)
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n", encoding="utf-8")
-    service.set_profile(ProfileLoader.load_profile(path))
+    regulation_service.set_profile(ProfileLoader.load_profile(path))
     frame.sync()
 
     regulation.click()
 
-    assert service.regulation_active
+    assert regulation_service.regulation_active
     assert regulation.text() == "Stop regulation"
-    assert not self_driven.isEnabled()
+    assert not automatic.isEnabled()
 
     regulation.click()
 
-    assert not service.regulation_active
+    assert not regulation_service.regulation_active
     assert regulation.text() == "Start regulation"
-    assert self_driven.isEnabled()
+    assert automatic.isEnabled()
 
 
-def test_starting_self_driven_disables_regulation_button(tmp_path: Path) -> None:
-    service = RegulationService()
-    frame = _frame(service)
-    regulation, self_driven = _buttons(frame)
+def test_starting_automatic_disables_regulation_button(tmp_path: Path) -> None:
+    regulation_service = RegulationService()
+    frame = _frame(regulation_service)
+    regulation, automatic = _buttons(frame)
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n", encoding="utf-8")
-    service.set_profile(ProfileLoader.load_profile(path))
+    regulation_service.set_profile(ProfileLoader.load_profile(path))
     frame.sync()
 
-    self_driven.click()
+    automatic.click()
 
-    assert service.self_driven_active
-    assert self_driven.text() == "Stop self-driven regulation"
+    assert regulation_service.self_driven_active
+    assert automatic.text() == "Stop automatic regulation"
     assert not regulation.isEnabled()
 
-    self_driven.click()
+    automatic.click()
 
-    assert not service.self_driven_active
-    assert self_driven.text() == "Start self-driven regulation"
+    assert not regulation_service.self_driven_active
+    assert automatic.text() == "Start automatic regulation"
     assert regulation.isEnabled()

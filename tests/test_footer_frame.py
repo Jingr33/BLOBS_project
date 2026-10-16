@@ -26,3 +26,18 @@ def test_footer_formats_the_regulation_time() -> None:
     footer.set_regulation_time(None)
 
     assert footer.time_label.text() == "no regulation is running"
+
+
+def test_footer_shows_the_remaining_time_only_when_known() -> None:
+    footer = FooterFrame()
+
+    assert footer.remaining_label.isHidden()
+
+    footer.set_remaining_time(95.0)
+
+    assert footer.remaining_label.text() == "Remaining: 01:35.0"
+    assert not footer.remaining_label.isHidden()
+
+    footer.set_remaining_time(None)
+
+    assert footer.remaining_label.isHidden()
