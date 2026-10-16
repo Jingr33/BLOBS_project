@@ -7,39 +7,31 @@ from blobs_project.frontend.actions import (
 )
 
 
-def test_only_force_reset_is_visible_in_the_toolbar() -> None:
-    toolbar = visible_actions(ActionPlace.TOOLBAR)
-
-    assert ActionId.EXPORT_REPORT in HEADER_ACTIONS
-    assert ActionId.EXPORT_REPORT not in toolbar
-    assert set(toolbar) == {ActionId.FORCE_RESET}
+def test_every_action_is_registered() -> None:
+    assert set(HEADER_ACTIONS) == set(ActionId)
 
 
-def test_removed_header_actions_are_gone() -> None:
-    values = {action_id.value for action_id in ActionId}
+def test_header_offers_export_csv_before_force_reset() -> None:
+    assert list(visible_actions(ActionPlace.HEADER)) == [
+        ActionId.EXPORT_CSV,
+        ActionId.FORCE_RESET,
+        ActionId.DOWNLOAD_CSV_TEMPLATE,
+    ]
 
-    assert values == {"force_reset", "export_report"}
-    assert all(
-        action.place is ActionPlace.TOOLBAR for action in HEADER_ACTIONS.values()
-    )
+
+def test_regulation_place_offers_only_import_csv() -> None:
+    assert list(visible_actions(ActionPlace.REGULATION)) == [ActionId.IMPORT_CSV]
 
 
-def test_disabled_action_can_be_switched_on() -> None:
-    original = HEADER_ACTIONS[ActionId.EXPORT_REPORT]
+def test_disabled_action_is_hidden_from_users() -> None:
+    original = HEADER_ACTIONS[ActionId.IMPORT_CSV]
     try:
-        HEADER_ACTIONS[ActionId.EXPORT_REPORT] = HeaderAction(
-            ActionPlace.TOOLBAR, enabled=True
+        HEADER_ACTIONS[ActionId.IMPORT_CSV] = HeaderAction(
+            (ActionPlace.REGULATION,), enabled=False
         )
 
-        assert ActionId.EXPORT_REPORT in visible_actions(ActionPlace.TOOLBAR)
+        assert ActionId.IMPORT_CSV not in visible_actions(ActionPlace.REGULATION)
     finally:
-        HEADER_ACTIONS[ActionId.EXPORT_REPORT] = original
+        HEADER_ACTIONS[ActionId.IMPORT_CSV] = original
 
-    assert ActionId.EXPORT_REPORT not in visible_actions(ActionPlace.TOOLBAR)
-
-
-def test_action_ids_are_unique_identifiers() -> None:
-    values = [action_id.value for action_id in ActionId]
-
-    assert len(values) == len(set(values))
-    assert set(HEADER_ACTIONS) == set(ActionId)
+    assert ActionId.IMPORT_CSV in visible_actions(ActionPlace.REGULATION)

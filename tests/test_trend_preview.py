@@ -14,8 +14,13 @@ _APP = QApplication.instance() or QApplication([])
 
 def test_desired_line_is_drawn_in_red() -> None:
     preview = TrendPreview()
-    preview.resize(700, 260)
-    preview.set_samples([(0.0, 10.0), (120.0, 10.0)], [(0.0, 25.0), (120.0, 25.0)])
+    preview.resize(700, 320)
+    preview.set_samples(
+        [(0.0, 10.0), (120.0, 10.0)],
+        [(0.0, 25.0), (120.0, 25.0)],
+        [(0.0, 1.0), (120.0, 1.5)],
+        [(0.0, 0.04), (120.0, 0.08)],
+    )
     preview.show()
     _APP.processEvents()
 
@@ -25,9 +30,23 @@ def test_desired_line_is_drawn_in_red() -> None:
         image,
         lambda color: color.red() < 120 and color.green() > 170 and color.blue() > 170,
     )
+    flow = _count_pixels(
+        image,
+        lambda color: (
+            color.red() > 220 and 100 < color.green() < 210 and color.blue() < 140
+        ),
+    )
+    power = _count_pixels(
+        image,
+        lambda color: (
+            120 < color.red() < 210 and color.green() < 180 and color.blue() > 220
+        ),
+    )
 
     assert red > 50
     assert cyan > 50
+    assert flow > 20
+    assert power > 20
 
 
 def _count_pixels(image: QImage, predicate: Callable[[QColor], bool]) -> int:

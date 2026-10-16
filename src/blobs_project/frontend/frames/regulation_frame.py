@@ -4,8 +4,8 @@ from collections.abc import Callable
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QFileDialog,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -17,19 +17,20 @@ from blobs_project.backend.regulation import (
     CsvProfile,
     ProfileRequiredError,
     RegulationService,
-    SampleExportStatus,
 )
+from blobs_project.frontend.actions import ActionId, ActionPlace, visible_actions
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.frontend.widgets.tank_control import TankControl
 from blobs_project.translations import tr
 
 
 class RegulationFrame(QFrame):
+    action_requested = pyqtSignal(object)
     status_changed = pyqtSignal(str)
 
-    def __init__(self, service: RegulationService) -> None:
+    def __init__(self, regulation_service: RegulationService) -> None:
         super().__init__()
-        self._service = service
+        self._regulation_service = regulation_service
         self.setObjectName("regulation")
         self._tank2_control = TankControl(
             tr("tank.lower_label"), config.TANK_LOWER_COLOR
@@ -44,6 +45,7 @@ class RegulationFrame(QFrame):
         layout.addWidget(
             QtHelper.make_label(tr("regulation.section_title"), "sectionTitle")
         )
+        layout.addLayout(self._build_pump_grid())
         layout.addWidget(self._tank2_control)
         layout.addWidget(self._build_mode_label())
         layout.addSpacing(6)
@@ -52,63 +54,79 @@ class RegulationFrame(QFrame):
         )
         layout.addWidget(self._regulation_button)
         layout.addSpacing(18)
-        layout.addLayout(self._build_csv_row())
-        self._self_driven_button = self._build_button(
-            tr("regulation.start_self_driven"), "primary", self._toggle_self_driven
+        self._automatic_button = self._build_button(
+            tr("regulation.start_automatic"), "primary", self._toggle_automatic
         )
-        layout.addWidget(self._self_driven_button)
+        layout.addLayout(self._build_action_row())
         self._profile_label = QtHelper.make_label(
             tr("regulation.profile_missing"), "profile"
         )
         layout.addWidget(self._profile_label)
 
-        self._tank2_control.desired_changed.connect(self._service.set_desired_tank2)
+        self._tank2_control.desired_changed.connect(self._set_desired_level)
 
-    def _build_csv_row(self) -> QHBoxLayout:
+    def _set_desired_level(self, value_cm: float) -> None:
+        self._regulation_service.regulation_values.tank2_desired_cm = value_cm
+
+    def _build_action_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
         row.setSpacing(8)
-        self._import_button = self._build_button(
-            tr("regulation.import_csv"), "", self._import_csv
-        )
-        row.addWidget(self._import_button)
-        self._export_button = self._build_button(
-            tr("regulation.export_csv"), "", self._export_csv
-        )
-        row.addWidget(self._export_button)
+        if ActionId.IMPORT_CSV in visible_actions(ActionPlace.REGULATION):
+            import_button = QPushButton(tr("action.import_csv"))
+            import_button.clicked.connect(
+                lambda _checked=False: self.action_requested.emit(ActionId.IMPORT_CSV)
+            )
+            row.addWidget(import_button, 1)
+        row.addWidget(self._automatic_button, 2)
         return row
 
+    def _build_pump_grid(self) -> QGridLayout:
+        grid = QGridLayout()
+        grid.setVerticalSpacing(8)
+        grid.setHorizontalSpacing(12)
+        self._power_label = QtHelper.add_metric_row(grid, 0, tr("regulation.power"))
+        grid.setColumnStretch(1, 1)
+        return grid
+
     def sync(self) -> None:
-        service = self._service
+        regulation_service = self._regulation_service
         self._tank2_control.set_values(
-            service.tank2_actual_cm,
-            service.tank2_desired_cm,
-            service.tank2_deviation_percent,
+            regulation_service.regulation_values.tank2_actual_cm,
+            regulation_service.regulation_values.tank2_desired_cm,
+            regulation_service.tank2_deviation_percent,
         )
-        self._tank2_control.set_desired_editable(not service.self_driven_active)
+        self._tank2_control.set_desired_editable(
+            not regulation_service.self_driven_active
+        )
+        self._tank2_control.set_flow(regulation_service.regulation_values.flow_l_min)
+        self._power_label.setText(
+            f"{regulation_service.regulation_values.pump_power_w:.2f}"
+        )
 
         mode_key = (
             "regulation.desired_levels_profile"
-            if service.self_driven_active
+            if regulation_service.self_driven_active
             else "regulation.desired_levels_manual"
         )
         self._mode_label.setText(tr(mode_key))
         self._set_button_state(
             self._regulation_button,
-            service.regulation_active,
+            regulation_service.regulation_active,
             "regulation.start_regulation",
             "regulation.stop_regulation",
         )
         self._set_button_state(
-            self._self_driven_button,
-            service.self_driven_active,
-            "regulation.start_self_driven",
-            "regulation.stop_self_driven",
+            self._automatic_button,
+            regulation_service.self_driven_active,
+            "regulation.start_automatic",
+            "regulation.stop_automatic",
         )
-        self._regulation_button.setEnabled(not service.self_driven_active)
-        self._self_driven_button.setEnabled(
-            service.profile is not None and not service.regulation_active
+        self._regulation_button.setEnabled(not regulation_service.self_driven_active)
+        self._automatic_button.setEnabled(
+            regulation_service.profile is not None
+            and not regulation_service.regulation_active
         )
-        self._set_profile_label(service.profile)
+        self._set_profile_label(regulation_service.profile)
 
     def _set_profile_label(self, profile: CsvProfile | None) -> None:
         if profile is None:
@@ -123,49 +141,16 @@ class RegulationFrame(QFrame):
         )
 
     def _toggle_regulation(self) -> None:
-        self._service.toggle_regulation()
+        self._regulation_service.toggle_regulation()
         self.sync()
 
-    def _toggle_self_driven(self) -> None:
+    def _toggle_automatic(self) -> None:
         try:
-            self._service.toggle_self_driven()
+            self._regulation_service.toggle_self_driven()
         except ProfileRequiredError:
             self.status_changed.emit(tr("status.profile_required"))
             return
         self.sync()
-
-    def _import_csv(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(
-            self, tr("dialog.import_title"), "", tr("dialog.csv_filter")
-        )
-        if not path:
-            return
-        profile = self._service.import_profile(path)
-        if profile is None:
-            self.status_changed.emit(tr("status.profile_invalid"))
-            return
-        self.status_changed.emit(
-            tr(
-                "status.profile_loaded",
-                rows=profile.row_count,
-                duration=profile.duration_s,
-            )
-        )
-        self.sync()
-
-    def _export_csv(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(
-            self, tr("dialog.export_title"), "samples.csv", tr("dialog.csv_filter")
-        )
-        if not path:
-            return
-        status = self._service.export_samples(path)
-        if status is SampleExportStatus.FAILED:
-            self.status_changed.emit(tr("status.export_failed"))
-        elif status is SampleExportStatus.NO_SAMPLES:
-            self.status_changed.emit(tr("status.export_missing"))
-        else:
-            self.status_changed.emit(tr("status.export_ready"))
 
     @staticmethod
     def _build_button(

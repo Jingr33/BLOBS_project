@@ -2,4 +2,5 @@ from enum import Enum
 
 
 class ActionPlace(Enum):
-    TOOLBAR = "toolbar"
+    HEADER = "header"
+    REGULATION = "regulation"
