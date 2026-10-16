@@ -3,11 +3,33 @@ from pathlib import Path
 import pytest
 
 from blobs_project import config
+from blobs_project.backend.hardware import SimulatedDAQ, Tower
 from blobs_project.backend.regulation import (
     ProfileLoader,
     ProfileRequiredError,
     RegulationService,
 )
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.t = 0.0
+
+    def __call__(self) -> float:
+        return self.t
+
+
+def make_simulated_service() -> tuple[RegulationService, FakeClock]:
+    """Return a service on the simulated tower driven by a fake clock."""
+    clock = FakeClock()
+    return RegulationService(tower=Tower(SimulatedDAQ(clock=clock))), clock
+
+
+def run(service: RegulationService, clock: FakeClock, seconds: float) -> None:
+    """Tick ``service`` like the UI timer while the plant time advances."""
+    for _ in range(round(seconds / 0.1)):
+        clock.t += 0.1
+        service.tick(0.1)
 
 
 def test_self_driven_requires_imported_profile() -> None:
@@ -45,7 +67,7 @@ def test_self_driven_replaces_manual_regulation(tmp_path: Path) -> None:
 
 def test_self_driven_stops_when_profile_finishes(tmp_path: Path) -> None:
     path = tmp_path / "profile.csv"
-    path.write_text("25.0\n25.0\n25.0\n", encoding="utf-8")
+    path.write_text("20.0\n20.0\n20.0\n", encoding="utf-8")
     regulation_service = RegulationService()
     regulation_service.set_profile(ProfileLoader.load_profile(path))
     regulation_service.toggle_self_driven()
@@ -55,7 +77,7 @@ def test_self_driven_stops_when_profile_finishes(tmp_path: Path) -> None:
 
     assert not regulation_service.self_driven_active
     assert regulation_service.profile_finished
-    assert regulation_service.regulation_values.tank2_desired_cm == pytest.approx(25.0)
+    assert regulation_service.regulation_values.tank2_desired_cm == pytest.approx(20.0)
     assert regulation_service.elapsed_s >= 3.0
 
 
@@ -70,18 +92,16 @@ def test_desired_setpoint_is_clamped_to_tank_range() -> None:
     )
 
 
-def test_regulation_moves_actual_level_towards_desired() -> None:
-    regulation_service = RegulationService()
-    regulation_service.regulation_values.tank2_desired_cm = config.TANK_LEVEL_MAX_CM
-    regulation_service.toggle_regulation()
+def test_regulation_holds_the_simulated_tower_at_the_setpoint() -> None:
+    """The PI brings the simulated lower tank to the setpoint within 1 mm."""
+    service, clock = make_simulated_service()
+    service.regulation_values.tank2_desired_cm = 10.0
+    service.toggle_regulation()
 
-    for _ in range(100):
-        regulation_service.tick(0.1)
+    run(service, clock, 400.0)
 
-    assert (
-        regulation_service.regulation_values.tank2_actual_cm
-        > config.TANK_ACTUAL_LEVEL_CM
-    )
+    assert service.regulation_values.tank2_actual_cm == pytest.approx(10.0, abs=0.1)
+    assert 2.0 < service.tower.pump_voltage < 7.5
 
 
 def test_trend_points_expose_recorded_samples() -> None:
@@ -188,25 +208,23 @@ def test_self_driven_desired_line_covers_the_whole_profile_from_the_start(
 
 
 def test_flow_and_power_are_measured_while_the_level_rises() -> None:
-    regulation_service = RegulationService()
-    regulation_service.regulation_values.tank2_desired_cm = config.TANK_LEVEL_MAX_CM
-    regulation_service.toggle_regulation()
-    regulation_service.tick(0.1)
+    """Flow and pump power follow the run and drop to 0 when it stops."""
+    service, clock = make_simulated_service()
+    service.regulation_values.tank2_desired_cm = 10.0
+    service.toggle_regulation()
+    run(service, clock, 30.0)
 
-    assert regulation_service.regulation_values.flow_l_min > 0.0
-    assert regulation_service.regulation_values.pump_power_w > 0.0
+    assert service.regulation_values.flow_l_min > 0.0
+    assert service.regulation_values.pump_power_w > 0.0
+    assert service.flow_trend_points()
+    assert service.pump_power_trend_points()
 
-    for _ in range(10):
-        regulation_service.tick(0.1)
+    service.toggle_regulation()
+    service.tick(0.1)
 
-    assert regulation_service.flow_trend_points()
-    assert regulation_service.pump_power_trend_points()
-
-    regulation_service.toggle_regulation()
-    regulation_service.tick(0.1)
-
-    assert regulation_service.regulation_values.flow_l_min == 0.0
-    assert regulation_service.regulation_values.pump_power_w == 0.0
+    assert service.regulation_values.flow_l_min == 0.0
+    assert service.regulation_values.pump_power_w == 0.0
+    assert service.tower.pump_voltage == 0.0
 
 
 def test_total_energy_accumulates_while_the_pump_runs() -> None:

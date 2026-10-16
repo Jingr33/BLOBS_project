@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._header)
         layout.addLayout(self._build_content(), 1)
         layout.addWidget(self._footer)
+        self._footer.set_connection(self._regulation_service.simulated)
         self.setCentralWidget(root)
         self._refresh_view()
 
@@ -109,7 +110,10 @@ class MainWindow(QMainWindow):
         self._previous_state = current
         if current == previous:
             return
-        if previous[1] and not current[1]:
+        fault = self._regulation_service.fault
+        if any(previous) and not any(current) and fault is not None:
+            self._footer.set_status(tr("status.fault", reason=fault), alert=True)
+        elif previous[1] and not current[1]:
             key = (
                 "status.profile_finished"
                 if self._regulation_service.profile_finished

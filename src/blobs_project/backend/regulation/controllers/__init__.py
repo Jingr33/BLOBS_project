@@ -1,4 +1,4 @@
-from .proportional_controller import ProportionalController
+from .pi_controller import PIController, PIRegulationController
 from .regulation_controller_base import RegulationControllerBase
 
-__all__ = ["ProportionalController", "RegulationControllerBase"]
+__all__ = ["PIController", "PIRegulationController", "RegulationControllerBase"]

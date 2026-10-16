@@ -43,7 +43,7 @@ class TankControl(QFrame):
 
     def _build_desired_spin(self) -> QDoubleSpinBox:
         spin = QDoubleSpinBox()
-        spin.setRange(0.0, config.TANK_LEVEL_MAX_CM)
+        spin.setRange(config.SETPOINT_MIN_CM, config.SETPOINT_MAX_CM)
         spin.setDecimals(1)
         spin.setSingleStep(0.1)
         spin.setValue(config.TANK_DESIRED_LEVEL_CM)

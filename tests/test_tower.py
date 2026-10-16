@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 
+from blobs_project import config
 from blobs_project.backend import HardwareError, MockDAQ, Tower, TowerCalibration
 
 
@@ -25,15 +26,24 @@ class _FailingWriteDAQ(MockDAQ):
 def make_tower(daq: MockDAQ | None = None, **kw: Any) -> tuple[Tower, MockDAQ]:
     """Return a ``Tower`` over ``daq`` (a new ``MockDAQ`` if None) and the DAQ."""
     daq = daq if daq is not None else MockDAQ()
+    kw.setdefault("offset_cm", 0.0)
     return Tower(daq, TowerCalibration(**kw)), daq
 
 
 def test_level_conversion() -> None:
-    """With the default calibration 3.255 V on ai0 is 9.18 cm."""
+    """With the default gain 3.255 V on ai0 is 3 V above the zero."""
     tower, daq = make_tower()
     daq.set_input_voltage("ai0", 3.255)
 
-    assert tower.read_level_cm() == pytest.approx(9.18)
+    assert tower.read_level_cm() == pytest.approx(3.0 * config.TOWER_LEVEL_CM_PER_V)
+
+
+def test_level_is_measured_from_the_tank_bottom() -> None:
+    """``offset_cm`` is added to the level above the sensor zero."""
+    tower, daq = make_tower(cm_per_v=2.0, zero_v=1.0, offset_cm=1.35)
+    daq.set_input_voltage("ai0", 2.0)
+
+    assert tower.read_level_cm() == pytest.approx(3.35)
 
 
 def test_custom_calibration() -> None:

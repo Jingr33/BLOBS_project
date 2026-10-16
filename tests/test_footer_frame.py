@@ -16,6 +16,16 @@ def test_footer_reports_no_running_regulation() -> None:
     assert footer.time_label.text() == "no regulation is running"
 
 
+def test_footer_shows_whether_the_tower_is_simulated() -> None:
+    footer = FooterFrame()
+
+    footer.set_connection(True)
+    assert "Simulation" in footer.connection_label.text()
+
+    footer.set_connection(False)
+    assert "NI card connected" in footer.connection_label.text()
+
+
 def test_footer_formats_the_regulation_time() -> None:
     footer = FooterFrame()
 

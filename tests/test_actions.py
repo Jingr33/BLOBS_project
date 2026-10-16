@@ -16,6 +16,7 @@ def test_header_offers_export_csv_before_force_reset() -> None:
         ActionId.EXPORT_CSV,
         ActionId.FORCE_RESET,
         ActionId.DOWNLOAD_CSV_TEMPLATE,
+        ActionId.TARE,
     ]
 
 
