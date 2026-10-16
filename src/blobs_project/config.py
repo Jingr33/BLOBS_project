@@ -59,30 +59,42 @@ TREND_SERIES: Final = (
 )
 
 DEVIATION_OK_PERCENT: Final = 5.0
-LEVEL_RESPONSE_RATE: Final = 0.6
 
 PROFILE_DURATION_S: Final = 120.0
 PROFILE_SAMPLE_INTERVAL_S: Final = 1.0
 
 # NI DAQ / tower hardware
-# NI-DAQmx device name of the USB-6001 card. Used in: backend/hardware/NIDAQ.py
+# NI-DAQmx device name of the USB-6001 card.
 DAQ_DEVICE_NAME: Final = "Dev1"
-# Lower-tank level sensor input. Used in: backend/hardware/tower.py
+# Lower-tank level sensor input.
 TOWER_LEVEL_CHANNEL: Final = "ai0"
-# Pump driver output. Used in: backend/hardware/tower.py
+# Pump driver output.
 TOWER_PUMP_CHANNEL: Final = "ao1"
-# Level sensor gain, TMDG 338 Z3H 0-3 kPa -> 0-10 V. Used in: backend/hardware/tower.py
+# Level sensor gain, TMDG 338 Z3H 0-3 kPa -> 0-10 V.
 TOWER_LEVEL_CM_PER_V: Final = 3.06
 # Sensor voltage of an empty tank; drifts, re-tare before use.
-# Used in: backend/hardware/tower.py
 TOWER_LEVEL_ZERO_V: Final = 0.255
-# Pump cap; above it the upper tank overflows. Used in: backend/hardware/tower.py
+# Pump cap; above it the upper tank overflows.
 TOWER_PUMP_MAX_V: Final = 7.5
 SAMPLE_LOG_LIMIT: Final = 5000
 
-# process measurements
-TANK_CROSS_SECTION_CM2: Final = 200.0
-L_MIN_PER_CM3_S: Final = 0.06
-WATER_DENSITY_KG_M3: Final = 1000.0
+# regulation loop
+# Controller and measurement period [s].
+CONTROL_PERIOD_S: Final = 0.5
+# PI gains (CHR tuning), level in metres -> pump volts.
+PI_KP_V_PER_M: Final = 46.8
+PI_KI: Final = 1.28
+# Lowest PI output; below ~1.56 V the pump lifts no water.
+PI_MIN_V: Final = 1.5
+# Median window against single sensor spikes [samples].
+LEVEL_MEDIAN_SAMPLES: Final = 5
+# Invalid level readings in a row before the run stops.
+MAX_INVALID_SAMPLES: Final = 5
+
+# process estimates from the 7 Oct 2026 measurements
+# Lower-tank outflow coefficient [m^2]; steady flow = c * sqrt(2 g h).
+LOWER_OUTFLOW_COEFF_M2: Final = 1.11327e-05
 GRAVITY_M_S2: Final = 9.81
-PUMP_EFFICIENCY: Final = 0.5
+# Pump current I = a + b*u [A] and pump voltage U = c + d*u [V] vs control voltage u.
+PUMP_CURRENT_A: Final = (0.408, 0.0741)
+PUMP_VOLTAGE_V: Final = (3.5, 0.6)

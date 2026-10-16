@@ -1,23 +1,51 @@
 from __future__ import annotations
 
+import logging
+import math
+
 from blobs_project import config
 from blobs_project.backend.dtos.regulation_values import RegulationValues
+from blobs_project.backend.hardware import HardwareError, SimulatedDAQ, Tower
 from blobs_project.backend.timekeeping import Stopwatch
 
-from .controllers import ProportionalController, RegulationControllerBase
+from .controllers import PIRegulationController, RegulationControllerBase
+from .level_filter import LevelFilter
 from .profile_required_error import ProfileRequiredError
 from .regulation_process_loader import CsvProfile
 from .sample_log import SampleLog
 
+logger = logging.getLogger(__name__)
+
+
+def pump_power_w(u: float) -> float:
+    """Return the estimated pump power [W] at control voltage ``u``."""
+    (i0, i1), (v0, v1) = config.PUMP_CURRENT_A, config.PUMP_VOLTAGE_V
+    return (v0 + v1 * u) * (i0 + i1 * u)
+
+
+def lower_outflow_l_min(level_cm: float) -> float:
+    """Return the lower-tank outflow [l/min]; in steady state it equals the inflow."""
+    h_m = max(level_cm, 0.0) / 100.0
+    q_m3_s = config.LOWER_OUTFLOW_COEFF_M2 * math.sqrt(2.0 * config.GRAVITY_M_S2 * h_m)
+    return q_m3_s * 60000.0
+
 
 class RegulationService:
-    def __init__(self, controller: RegulationControllerBase | None = None) -> None:
+    """Run the level control loop on a ``Tower`` and keep its log and profile."""
+
+    def __init__(
+        self, ctrl: RegulationControllerBase | None = None, tower: Tower | None = None
+    ) -> None:
+        """Use ``ctrl`` (default PI) on ``tower`` (default simulated)."""
         self._profile: CsvProfile | None = None
         self._sample_log = SampleLog()
         self._stopwatch = Stopwatch(config.PROFILE_SAMPLE_INTERVAL_S)
-        self._controller: RegulationControllerBase = (
-            controller if controller is not None else ProportionalController()
-        )
+        self._controller = ctrl or PIRegulationController()
+        self._tower = tower or Tower(SimulatedDAQ())
+        self._level_filter = LevelFilter(config.LEVEL_MEDIAN_SAMPLES)
+        self._since_control_s = 0.0
+        self._invalid_samples = 0
+        self._fault: str | None = None
         self._regulation_active = False
         self._self_driven_active = False
         self._profile_finished = False
@@ -27,6 +55,25 @@ class RegulationService:
     @property
     def profile(self) -> CsvProfile | None:
         return self._profile
+
+    @property
+    def tower(self) -> Tower:
+        return self._tower
+
+    @property
+    def fault(self) -> str | None:
+        """Return why the last run was stopped by the service, or ``None``."""
+        return self._fault
+
+    def open(self) -> None:
+        """Open the tower; the pump starts at 0 V."""
+        self._tower.open()
+
+    def close(self) -> None:
+        """Stop any run and close the tower with the pump at 0 V."""
+        self._regulation_active = False
+        self._self_driven_active = False
+        self._tower.close()
 
     @property
     def sample_log(self) -> SampleLog:
@@ -81,6 +128,7 @@ class RegulationService:
     def toggle_regulation(self) -> None:
         if self._regulation_active:
             self._regulation_active = False
+            self._stop_pump()
             return
         self._self_driven_active = False
         self._profile_finished = False
@@ -90,6 +138,7 @@ class RegulationService:
     def toggle_self_driven(self) -> None:
         if self._self_driven_active:
             self._self_driven_active = False
+            self._stop_pump()
             return
         if self._profile is None:
             raise ProfileRequiredError("no profile imported")
@@ -104,6 +153,7 @@ class RegulationService:
         self._profile_finished = False
         self._reset_run_state()
         self.regulation_values.tank2_desired_cm = 0.0
+        self._stop_pump()
 
     def tick(self, dt_s: float) -> None:
         if not self.is_running or dt_s <= 0:
@@ -113,7 +163,12 @@ class RegulationService:
         self._stopwatch.advance(dt_s)
         if self._self_driven_active:
             self._apply_profile_desired()
-        self._advance_level(dt_s)
+        self._since_control_s += dt_s
+        if self._since_control_s >= config.CONTROL_PERIOD_S:
+            self._control_step(self._since_control_s)
+            self._since_control_s = 0.0
+            if not self.is_running:
+                return
         self.regulation_values.total_energy_wh += (
             self.regulation_values.pump_power_w * dt_s / 3600.0
         )
@@ -141,6 +196,10 @@ class RegulationService:
         self._chart_started = True
         self._sample_log.clear()
         self._controller.reset()
+        self._level_filter.clear()
+        self._since_control_s = 0.0
+        self._invalid_samples = 0
+        self._fault = None
         self.regulation_values.reset_flow()
         self.regulation_values.reset_pump()
         self.regulation_values.reset_energy()
@@ -153,34 +212,45 @@ class RegulationService:
             self._stopwatch.elapsed_s
         )
 
-    def _advance_level(self, dt_s: float) -> None:
-        change = self._controller.compute(
-            dt_s,
-            self.regulation_values.tank2_desired_cm,
-            self.regulation_values.tank2_actual_cm,
-        )
-        previous_cm = self.regulation_values.tank2_actual_cm
-        self.regulation_values.tank2_actual_cm = (
-            self.regulation_values.tank2_actual_cm + change
-        )
-        self._update_flow_and_power(dt_s, previous_cm)
-
-    def _update_flow_and_power(self, dt_s: float, previous_cm: float) -> None:
-        delta_cm = self.regulation_values.tank2_actual_cm - previous_cm
-        flow_cm3_s = delta_cm / dt_s * config.TANK_CROSS_SECTION_CM2
-        self.regulation_values.flow_l_min = flow_cm3_s * config.L_MIN_PER_CM3_S
-        if self.regulation_values.flow_l_min <= 0.0:
-            self.regulation_values.reset_pump()
+    def _control_step(self, dt_s: float) -> None:
+        """Read the level, run the controller and drive the pump."""
+        try:
+            level_cm = self._level_filter(self._tower.read_level_cm())
+            if not math.isfinite(level_cm):
+                self._invalid_samples += 1
+                if self._invalid_samples >= config.MAX_INVALID_SAMPLES:
+                    self._stop_on_fault(
+                        f"{self._invalid_samples} invalid level readings"
+                    )
+                return
+            self._invalid_samples = 0
+            volts = self._controller.compute(
+                dt_s, self.regulation_values.tank2_desired_cm, level_cm
+            )
+            applied = self._tower.set_pump_voltage(volts)
+        except (HardwareError, ValueError) as e:
+            self._stop_on_fault(f"tower error: {e}")
             return
-        head_m = self.regulation_values.tank2_actual_cm / 100.0
-        flow_m3_s = self.regulation_values.flow_l_min / 60000.0
-        self.regulation_values.pump_power_w = (
-            config.WATER_DENSITY_KG_M3
-            * config.GRAVITY_M_S2
-            * head_m
-            * flow_m3_s
-            / config.PUMP_EFFICIENCY
-        )
+        self.regulation_values.tank2_actual_cm = level_cm
+        self.regulation_values.flow_l_min = lower_outflow_l_min(level_cm)
+        self.regulation_values.pump_power_w = pump_power_w(applied)
+
+    def _stop_on_fault(self, reason: str) -> None:
+        """Stop the run, the pump to 0 V, and remember ``reason``."""
+        logger.error("regulation stopped: %s", reason)
+        self._fault = reason
+        self._regulation_active = False
+        self._self_driven_active = False
+        self._stop_pump()
+
+    def _stop_pump(self) -> None:
+        """Set the pump to 0 V; a failing write is logged, never raised."""
+        try:
+            self._tower.stop_pump()
+        except HardwareError:
+            logger.exception("could not stop the pump")
+        self.regulation_values.reset_flow()
+        self.regulation_values.reset_pump()
 
     def _full_profile_points(self) -> list[tuple[float, float]]:
         if self._profile is None:
@@ -205,10 +275,14 @@ class RegulationService:
         )
 
     def _stop_profile_when_finished(self) -> None:
+        if not self._self_driven_active:
+            return
         if self._profile is None:
             self._self_driven_active = False
+            self._stop_pump()
             return
         if self._stopwatch.elapsed_s < self._profile.duration_s:
             return
         self._self_driven_active = False
         self._profile_finished = True
+        self._stop_pump()
