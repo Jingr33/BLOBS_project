@@ -25,6 +25,7 @@ class TowerCalibration:
     pump_channel: str = config.TOWER_PUMP_CHANNEL
     cm_per_v: float = config.TOWER_LEVEL_CM_PER_V
     zero_v: float = config.TOWER_LEVEL_ZERO_V
+    offset_cm: float = config.TOWER_LEVEL_OFFSET_CM
     max_pump_v: float = config.TOWER_PUMP_MAX_V
 
 
@@ -85,8 +86,9 @@ class Tower:
             logger.exception("closing the tower failed while handling %r", exc)
 
     def read_level_cm(self) -> float:
-        """Return the lower-tank level in cm (raw, may be slightly negative)."""
-        return (self.read_level_v() - self._zero_v) * self._cal.cm_per_v
+        """Return the lower-tank level in cm above the tank bottom."""
+        level_cm = (self.read_level_v() - self._zero_v) * self._cal.cm_per_v
+        return level_cm + self._cal.offset_cm
 
     def set_pump_voltage(self, volts: float) -> float:
         """Clamp ``volts`` to the safe range, write it and return the applied value.

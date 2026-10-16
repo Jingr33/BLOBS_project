@@ -4,7 +4,7 @@ import io
 
 import pytest
 
-from blobs_project import lab
+from blobs_project import config, lab
 from blobs_project.backend import HardwareError, MockDAQ, Tower
 
 
@@ -50,7 +50,8 @@ def test_run_logs_every_level() -> None:
     rows = log.getvalue().splitlines()
     assert len(rows) == 4
     assert [row.split(",")[1] for row in rows] == ["1.000"] * 2 + ["2.000"] * 2
-    assert all(row.endswith(",1.2550,3.060") for row in rows)
+    level_cm = config.TOWER_LEVEL_CM_PER_V + config.TOWER_LEVEL_OFFSET_CM
+    assert all(row.endswith(f",1.2550,{level_cm:.3f}") for row in rows)
 
 
 def test_main_writes_csv_header(tmp_path: pytest.TempPathFactory) -> None:

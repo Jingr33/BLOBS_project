@@ -49,7 +49,8 @@ def make_service(level_cm: float) -> tuple[RegulationService, MockDAQ]:
 
 def set_level(daq: MockDAQ, level_cm: float) -> None:
     """Make the mocked sensor read ``level_cm``."""
-    level_v = config.TOWER_LEVEL_ZERO_V + level_cm / config.TOWER_LEVEL_CM_PER_V
+    above_zero_cm = level_cm - config.TOWER_LEVEL_OFFSET_CM
+    level_v = config.TOWER_LEVEL_ZERO_V + above_zero_cm / config.TOWER_LEVEL_CM_PER_V
     daq.set_input_voltage(config.TOWER_LEVEL_CHANNEL, level_v)
 
 
@@ -151,7 +152,7 @@ def test_tare_sets_the_sensor_zero() -> None:
     daq.set_input_voltage(config.TOWER_LEVEL_CHANNEL, 0.3)
 
     assert service.tare() == pytest.approx(0.3)
-    assert service.tower.read_level_cm() == pytest.approx(0.0)
+    assert service.tower.read_level_cm() == pytest.approx(config.TOWER_LEVEL_OFFSET_CM)
 
 
 def test_tare_is_refused_while_running() -> None:

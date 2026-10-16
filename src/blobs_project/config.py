@@ -70,10 +70,12 @@ DAQ_DEVICE_NAME: Final = "Dev1"
 TOWER_LEVEL_CHANNEL: Final = "ai0"
 # Pump driver output.
 TOWER_PUMP_CHANNEL: Final = "ao1"
-# Level sensor gain, TMDG 338 Z3H 0-3 kPa -> 0-10 V.
-TOWER_LEVEL_CM_PER_V: Final = 3.06
+# Level sensor gain (TMDG 338 Z3H), fitted to the tank scale on 16 Oct 2026.
+TOWER_LEVEL_CM_PER_V: Final = 3.17
 # Sensor voltage of an empty tank; drifts, re-tare before use.
 TOWER_LEVEL_ZERO_V: Final = 0.255
+# Height of the sensor zero (empty, drained tank) above the tank bottom [cm].
+TOWER_LEVEL_OFFSET_CM: Final = 1.54
 # Pump cap; above it the upper tank overflows.
 TOWER_PUMP_MAX_V: Final = 7.5
 SAMPLE_LOG_LIMIT: Final = 5000

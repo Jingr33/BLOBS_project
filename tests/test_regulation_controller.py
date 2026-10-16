@@ -35,7 +35,8 @@ def make_service(
     controller: RegulationControllerBase, daq: MockDAQ
 ) -> RegulationService:
     """Return a service on a mocked tower whose sensor reads 10 cm."""
-    level_v = config.TOWER_LEVEL_ZERO_V + 10.0 / config.TOWER_LEVEL_CM_PER_V
+    above_zero_cm = 10.0 - config.TOWER_LEVEL_OFFSET_CM
+    level_v = config.TOWER_LEVEL_ZERO_V + above_zero_cm / config.TOWER_LEVEL_CM_PER_V
     daq.set_input_voltage(config.TOWER_LEVEL_CHANNEL, level_v)
     return RegulationService(controller, Tower(daq))
 

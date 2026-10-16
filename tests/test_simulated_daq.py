@@ -13,12 +13,12 @@ class FakeClock:
 
 
 def settle(volts: float, seconds: float = 600.0) -> float:
-    """Return the lower-tank level [cm] after holding ``volts`` for ``seconds``."""
+    """Return the level above the sensor zero [cm] after ``seconds`` at ``volts``."""
     clock = FakeClock()
     tower = Tower(SimulatedDAQ(clock=clock))
     tower.set_pump_voltage(volts)
     clock.t = seconds
-    return tower.read_level_cm()
+    return tower.read_level_cm() - config.TOWER_LEVEL_OFFSET_CM
 
 
 def test_empty_tank_reads_zero() -> None:
