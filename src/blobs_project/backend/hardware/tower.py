@@ -82,6 +82,11 @@ class Tower:
         """Return the sensor voltage that reads as 0 cm."""
         return self._zero_v
 
+    @property
+    def max_pump_voltage(self) -> float:
+        """Return the configured pump-voltage cap for this tower."""
+        return self._cal.max_pump_v
+
     def open(self) -> None:
         """Open the DAQ and set the pump to 0 V; close the DAQ again if that fails."""
         self._daq.open()

@@ -88,6 +88,13 @@ CONTROL_PERIOD_S: Final = 0.5
 # PI gains (CHR tuning), level in metres -> pump volts.
 PI_KP_V_PER_M: Final = 46.8
 PI_KI: Final = 1.28
+# Predictive controller model and tuning (validate against physical runs).
+MPC_HORIZON_STEPS: Final = 50
+MPC_MOVE_WEIGHT: Final = 0.1
+MPC_INTEGRAL_GAIN: Final = 0.010
+MPC_RATE_LIMIT_V_S: Final = 1.0
+MPC_PROCESS_NOISE_VARIANCE_M2: Final = 1e-6
+MPC_SENSOR_NOISE_VARIANCE_M2: Final = 1e-5
 # Lowest PI output; below ~1.56 V the pump lifts no water.
 PI_MIN_V: Final = 1.5
 # Median window against single sensor spikes [samples].

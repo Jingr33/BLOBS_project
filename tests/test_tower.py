@@ -85,6 +85,12 @@ def test_pump_clamped_high() -> None:
     assert tower.pump_voltage == 7.5
 
 
+def test_tower_exposes_its_configured_pump_cap() -> None:
+    tower, _ = make_tower(max_pump_v=4.0)
+
+    assert tower.max_pump_voltage == 4.0
+
+
 def test_pump_clamped_low() -> None:
     """A negative request applies 0 V."""
     tower, _ = make_tower()

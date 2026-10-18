@@ -5,8 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "do-mpc>=5.0,<6",
     "nidaqmx>=1.6.0",
+    "numpy>=2.5.3",
     "pyqt6>=6.11.0",
+    "scipy>=1.18.1",
 ]
 
 [project.scripts]

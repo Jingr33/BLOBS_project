@@ -3,6 +3,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 
+class ControllerError(Exception):
+    """A controller model or solver failure that must stop regulation."""
+
+
 class RegulationControllerBase(ABC):
     """Level controller: turns the desired and measured level into a pump voltage."""
 

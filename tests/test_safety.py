@@ -12,6 +12,7 @@ from blobs_project.backend.csv_management import CsvService
 from blobs_project.backend.hardware import HardwareError, MockDAQ, Tower
 from blobs_project.backend.regulation import (
     CsvError,
+    ControllerError,
     ProfileLoader,
     RegulationControllerBase,
     RegulationService,
@@ -50,6 +51,14 @@ class _FailingWriteDAQ(MockDAQ):
         if self.fail_writes:
             raise HardwareError("write failed")
         super().write_voltage(channel, value)
+
+
+class _FailingController(RegulationControllerBase):
+    def reset(self) -> None:
+        pass
+
+    def compute(self, dt_s: float, desired_cm: float, actual_cm: float) -> float:
+        raise ControllerError("solver failed")
 
 
 def make_service(level_cm: float) -> tuple[RegulationService, MockDAQ]:
@@ -151,6 +160,18 @@ def test_regulation_does_not_start_when_pump_zero_cannot_be_confirmed() -> None:
     assert not service.is_running
     assert service.pump_state_uncertain
     assert service.fault is not None and "pump off unconfirmed" in service.fault
+
+
+def test_controller_failure_stops_the_pump_and_reports_a_fault() -> None:
+    daq = MockDAQ()
+    service = RegulationService(_FailingController(), Tower(daq))
+    service.toggle_regulation()
+
+    run(service, 1.0)
+
+    assert not service.is_running
+    assert pump_v(daq) == 0.0
+    assert service.fault is not None and "solver failed" in service.fault
 
 
 def test_overflow_warning_follows_the_level() -> None:

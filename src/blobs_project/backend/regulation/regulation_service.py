@@ -10,7 +10,13 @@ from blobs_project.backend.hardware import HardwareError, SimulatedDAQ, Tower
 from blobs_project.backend.statistics import StatisticsCalculator
 from blobs_project.backend.timekeeping import Stopwatch
 
-from .controllers import PIRegulationController, RegulationControllerBase
+from .controllers import (
+    ControllerError,
+    MPCRegulationController,
+    PIRegulationController,
+    PlantParams,
+    RegulationControllerBase,
+)
 from .measurement import LevelFilter, LevelObserver, ProcessModel
 from .profile import CsvProfile, ProfileRequiredError, ProfileSchedule
 from .recording import SampleLog
@@ -25,13 +31,15 @@ class RegulationService:
     def __init__(
         self, ctrl: RegulationControllerBase | None = None, tower: Tower | None = None
     ) -> None:
-        """Use ``ctrl`` (default PI) on ``tower`` (default simulated)."""
+        """Use ``ctrl`` (default MPC) on ``tower`` (default simulated)."""
         self._schedule = ProfileSchedule()
         self._safety = SafetyGuard()
         self._sample_log = SampleLog()
         self._stopwatch = Stopwatch(config.PROFILE_SAMPLE_INTERVAL_S)
-        self._controller = ctrl or PIRegulationController()
         self._tower = tower or Tower(SimulatedDAQ())
+        self._controller = ctrl or MPCRegulationController(
+            PlantParams(u_max=self._tower.max_pump_voltage)
+        )
         self._level_filter = LevelFilter(config.LEVEL_MEDIAN_SAMPLES)
         self._level_observer = LevelObserver(config.LEVEL_MEDIAN_SAMPLES)
         self._since_control_s = 0.0
@@ -331,7 +339,7 @@ class RegulationService:
             volts = self._controller.compute(dt_s, desired_cm, level_cm)
             applied = self._tower.set_pump_voltage(volts)
             self._pump_state_uncertain = False
-        except (HardwareError, ValueError) as e:
+        except (ControllerError, HardwareError, ValueError) as e:
             self._stop_on_fault(f"tower error: {e}")
             return
         self.regulation_values.flow_l_min = ProcessModel.lower_outflow_l_min(level_cm)
