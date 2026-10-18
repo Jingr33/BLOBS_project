@@ -36,7 +36,9 @@ def test_export_samples_writes_the_recorded_samples(tmp_path: Path) -> None:
         is SampleExportStatus.WRITTEN
     )
     header = path.read_text(encoding="utf-8").splitlines()[0]
-    assert header == "time_s,tank2_actual_cm"
+    assert (
+        header == "time_s,desired_cm,actual_cm,pump_voltage_v,pump_power_w,flow_l_min"
+    )
 
 
 def test_export_samples_without_samples_reports_an_empty_log(tmp_path: Path) -> None:
@@ -62,18 +64,18 @@ def test_export_samples_reports_a_file_error(tmp_path: Path) -> None:
     )
 
 
-def test_save_template_writes_the_profile_header(tmp_path: Path) -> None:
+def test_save_template_writes_a_loadable_profile(tmp_path: Path) -> None:
+    """The template has a header and example levels that load as a profile."""
     csv_service = CsvService()
     path = tmp_path / "template.csv"
 
     assert csv_service.save_template(path)
-    assert path.read_text(encoding="utf-8") == f"{CsvService.PROFILE_TEMPLATE_HEADER}\n"
+    assert path.read_text(encoding="utf-8").startswith("hladina_cm\n")
 
-    path.write_text(f"{CsvService.PROFILE_TEMPLATE_HEADER}\n20.0\n", encoding="utf-8")
     profile = csv_service.load_profile(path)
 
     assert profile is not None
-    assert profile.row_count == 1
+    assert profile.tank2_levels == (10.0, 15.0, 12.5, 8.0)
 
 
 def test_save_template_reports_a_file_error(tmp_path: Path) -> None:

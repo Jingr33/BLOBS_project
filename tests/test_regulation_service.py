@@ -56,6 +56,7 @@ def test_self_driven_replaces_manual_regulation(tmp_path: Path) -> None:
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n21.0\n", encoding="utf-8")
     regulation_service = RegulationService()
+    regulation_service.set_step_s(1.0)
     regulation_service.set_profile(ProfileLoader.load_profile(path))
     regulation_service.toggle_regulation()
 
@@ -69,6 +70,7 @@ def test_self_driven_stops_when_profile_finishes(tmp_path: Path) -> None:
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n20.0\n20.0\n", encoding="utf-8")
     regulation_service = RegulationService()
+    regulation_service.set_step_s(1.0)
     regulation_service.set_profile(ProfileLoader.load_profile(path))
     regulation_service.toggle_self_driven()
 
@@ -156,6 +158,7 @@ def test_remaining_time_counts_down_only_in_self_driven_mode(tmp_path: Path) -> 
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n21.0\n22.0\n", encoding="utf-8")
     regulation_service = RegulationService()
+    regulation_service.set_step_s(1.0)
     regulation_service.set_profile(ProfileLoader.load_profile(path))
 
     assert regulation_service.remaining_s is None
@@ -176,6 +179,7 @@ def test_self_driven_desired_line_covers_the_whole_profile_from_the_start(
     path = tmp_path / "profile.csv"
     path.write_text("5.0\n10.0\n15.0\n20.0\n", encoding="utf-8")
     regulation_service = RegulationService()
+    regulation_service.set_step_s(1.0)
     regulation_service.set_profile(ProfileLoader.load_profile(path))
     regulation_service.toggle_self_driven()
     regulation_service.tick(0.1)

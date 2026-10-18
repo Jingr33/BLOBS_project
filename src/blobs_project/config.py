@@ -61,6 +61,8 @@ DEVIATION_OK_PERCENT: Final = 5.0
 
 PROFILE_DURATION_S: Final = 120.0
 PROFILE_SAMPLE_INTERVAL_S: Final = 1.0
+# Default time one profile level is held [s]; the operator can change it.
+PROFILE_STEP_S: Final = 300.0
 
 # NI DAQ / tower hardware
 # NI-DAQmx device name of the USB-6001 card.
@@ -103,6 +105,18 @@ LEVEL_TRIP_CM: Final = 25.0
 # Empty-tank readings averaged by the sensor tare.
 TARE_SAMPLES: Final = 10
 TARE_INTERVAL_S: Final = 0.05
+
+# run statistics
+# Setpoint change that starts a new step in the statistics [cm].
+STEP_MIN_CM: Final = 0.1
+# Settling band: percent of the step size, but at least the minimum [cm].
+SETTLING_BAND_PERCENT: Final = 5.0
+SETTLING_BAND_MIN_CM: Final = 0.2
+# Overshoot smaller than this is sensor noise and is not counted [cm].
+OVERSHOOT_MIN_CM: Final = 0.1
+# Efficiency: level within the tolerance [cm], not counting the time after a change.
+EFFICIENCY_TOL_CM: Final = 0.1
+EFFICIENCY_SKIP_S: Final = 120.0
 
 # process estimates from the 7 Oct 2026 measurements
 # Lower-tank outflow coefficient [m^2]; steady flow = c * sqrt(2 g h).

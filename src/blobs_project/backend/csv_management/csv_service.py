@@ -4,39 +4,61 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Final
 
+from blobs_project.backend.dtos import Sample
 from blobs_project.backend.regulation import (
+    CsvError,
     CsvExporter,
     CsvProfile,
-    CsvProfileError,
     ProfileLoader,
-    Sample,
+    RunCsv,
     SampleExportStatus,
 )
+from blobs_project.backend.statistics import StatisticsCalculator, StatisticsCsv
 
 
 class CsvService:
-    PROFILE_TEMPLATE_HEADER: Final = "test content"  # temporary string
+    PROFILE_TEMPLATE: Final = "hladina_cm\n10\n15\n12.5\n8\n"
 
-    def load_profile(self, path: str | Path) -> CsvProfile | None:
+    def load_profile(self, path: Path) -> CsvProfile | None:
         try:
             return ProfileLoader.load_profile(path)
-        except CsvProfileError:
+        except CsvError:
             return None
 
-    def save_template(self, path: str | Path) -> bool:
+    def load(self, path: Path) -> CsvProfile | tuple[Sample, ...] | None:
+        """Return a profile or a recorded run, ``None`` if invalid."""
         try:
-            Path(path).write_text(f"{self.PROFILE_TEMPLATE_HEADER}\n", encoding="utf-8")
+            text = path.read_text(encoding="utf-8-sig")
+            if RunCsv.is_run(text):
+                return RunCsv.from_text(text)
+            return CsvProfile.from_text(text)
+        except (OSError, CsvError):
+            return None
+
+    def save_template(self, path: Path) -> bool:
+        try:
+            path.write_text(self.PROFILE_TEMPLATE, encoding="utf-8")
         except OSError:
             return False
         return True
 
     def export_samples(
-        self, samples: Sequence[Sample], path: str | Path
+        self, samples: Sequence[Sample], path: Path
     ) -> SampleExportStatus:
+        """Write ``samples`` to ``path`` and their statistics next to it."""
         try:
-            exported = CsvExporter.export_samples_csv(samples, path)
+            exported = CsvExporter.export_samples(samples, path)
+            if exported:
+                statistics = StatisticsCalculator.calculate(samples)
+                text = StatisticsCsv.to_text(statistics)
+                self.statistics_path(path).write_text(text, encoding="utf-8")
         except OSError:
             return SampleExportStatus.FAILED
         if not exported:
             return SampleExportStatus.NO_SAMPLES
         return SampleExportStatus.WRITTEN
+
+    @staticmethod
+    def statistics_path(path: Path) -> Path:
+        """Return the statistics path, ``run.csv`` -> ``run_statistics.csv``."""
+        return path.with_name(f"{path.stem}_statistics{path.suffix or '.csv'}")

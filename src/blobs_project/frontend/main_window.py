@@ -123,6 +123,7 @@ class MainWindow(QMainWindow):
             else None
         )
         self._footer.set_remaining_time(self._regulation_service.remaining_s)
+        self._visualization.update_statistics(self._regulation_service.statistics)
 
     def _report_state_changes(self) -> None:
         current = (

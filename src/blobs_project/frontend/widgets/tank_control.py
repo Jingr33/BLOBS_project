@@ -46,6 +46,7 @@ class TankControl(QFrame):
         spin.setRange(config.SETPOINT_MIN_CM, config.SETPOINT_MAX_CM)
         spin.setDecimals(1)
         spin.setSingleStep(0.1)
+        spin.setKeyboardTracking(False)
         spin.setValue(config.TANK_DESIRED_LEVEL_CM)
         spin.valueChanged.connect(self.desired_changed.emit)
         self._desired_spin = spin
@@ -61,9 +62,10 @@ class TankControl(QFrame):
         desired_cm: float,
         deviation_percent: float | None,
     ) -> None:
-        self._desired_spin.blockSignals(True)
-        self._desired_spin.setValue(desired_cm)
-        self._desired_spin.blockSignals(False)
+        if not self._desired_spin.hasFocus():
+            self._desired_spin.blockSignals(True)
+            self._desired_spin.setValue(desired_cm)
+            self._desired_spin.blockSignals(False)
 
         if actual_cm is None or deviation_percent is None:
             self._actual_label.setText(tr("regulation.no_sensor"))

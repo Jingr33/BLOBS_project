@@ -45,7 +45,7 @@ def test_automatic_button_waits_for_a_loaded_profile(tmp_path: Path) -> None:
     frame.sync()
 
     assert automatic.isEnabled()
-    assert _profile_label(frame).text() == "Profile: CSV / 2 rows / 2 s"
+    assert _profile_label(frame).text() == "Profile: 2 × 5 min = 10 min"
 
 
 def test_automatic_is_disabled_without_a_profile() -> None:
