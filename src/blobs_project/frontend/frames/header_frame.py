@@ -24,7 +24,7 @@ class HeaderFrame(QFrame):
         title_box.setSpacing(1)
         title_box.addWidget(QtHelper.make_label(tr("header.eyebrow"), "eyebrow"))
         title_box.addWidget(QtHelper.make_label(tr("header.title"), "title"))
-        title_box.setContentsMargins(30, 0, 0, 0)
+        title_box.setContentsMargins(5, 0, 0, 0)
         layout.addLayout(title_box)
         layout.addStretch()
         layout.addWidget(ClockWidget())
