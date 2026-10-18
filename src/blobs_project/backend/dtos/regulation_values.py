@@ -16,6 +16,7 @@ class RegulationValues:
     _flow_l_min: float
     _pump_power_w: float
     _total_energy_wh: float = 0.0
+    _pump_voltage_v: float = 0.0
 
     @property
     def tank2_actual_cm(self) -> float:
@@ -50,6 +51,14 @@ class RegulationValues:
         self._pump_power_w = value
 
     @property
+    def pump_voltage_v(self) -> float:
+        return self._pump_voltage_v
+
+    @pump_voltage_v.setter
+    def pump_voltage_v(self, value: float) -> None:
+        self._pump_voltage_v = value
+
+    @property
     def total_energy_wh(self) -> float:
         return self._total_energy_wh
 
@@ -66,6 +75,7 @@ class RegulationValues:
 
     def reset_pump(self) -> None:
         self._pump_power_w = 0.0
+        self._pump_voltage_v = 0.0
 
     def reset_energy(self) -> None:
         self._total_energy_wh = 0.0

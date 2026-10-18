@@ -1,18 +1,10 @@
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass
+from collections.abc import Sequence
 
 from blobs_project import config
-
-
-@dataclass(frozen=True)
-class Sample:
-    time_s: float
-    tank2_desired_cm: float
-    tank2_actual_cm: float
-    flow_l_min: float = 0.0
-    pump_power_w: float = 0.0
+from blobs_project.backend.dtos import Sample
 
 
 class SampleLog:
@@ -26,6 +18,7 @@ class SampleLog:
         tank2_actual_cm: float,
         flow_l_min: float = 0.0,
         pump_power_w: float = 0.0,
+        pump_voltage_v: float = 0.0,
     ) -> None:
         self._samples.append(
             Sample(
@@ -34,11 +27,17 @@ class SampleLog:
                 tank2_actual_cm,
                 flow_l_min,
                 pump_power_w,
+                pump_voltage_v,
             )
         )
 
     def clear(self) -> None:
         self._samples.clear()
+
+    def load(self, samples: Sequence[Sample]) -> None:
+        """Replace the log with ``samples``, e.g. a run imported from CSV."""
+        self._samples.clear()
+        self._samples.extend(samples)
 
     def __len__(self) -> int:
         return len(self._samples)

@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
 from PyQt6.QtWidgets import QFileDialog, QWidget
 
 from blobs_project.backend.csv_management import CsvService
 from blobs_project.backend.hardware import HardwareError
-from blobs_project.backend.regulation import RegulationService, SampleExportStatus
+from blobs_project.backend.regulation import (
+    CsvProfile,
+    RegulationService,
+    SampleExportStatus,
+)
 from blobs_project.translations import tr
 
 from .action_id import ActionId
@@ -51,15 +56,18 @@ class ActionDispatcher:
         )
         if not path:
             return None
-        profile = self._csv_service.load_profile(path)
-        if profile is None:
+        loaded = self._csv_service.load(Path(path))
+        if loaded is None:
             return tr("status.profile_invalid")
-        self._regulation_service.set_profile(profile)
-        return tr(
-            "status.profile_loaded",
-            rows=profile.row_count,
-            duration=profile.duration_s,
-        )
+        if isinstance(loaded, CsvProfile):
+            self._regulation_service.set_profile(loaded)
+            return tr("status.profile_loaded", rows=loaded.row_count)
+        try:
+            self._regulation_service.load_history(loaded)
+        except RuntimeError:
+            return tr("status.history_running")
+        minutes = (loaded[-1].time_s - loaded[0].time_s) / 60.0
+        return tr("status.history_loaded", minutes=minutes)
 
     def _export_csv(self, parent: QWidget) -> str | None:
         path, _ = QFileDialog.getSaveFileName(
@@ -68,7 +76,7 @@ class ActionDispatcher:
         if not path:
             return None
         status = self._csv_service.export_samples(
-            self._regulation_service.sample_log.samples, path
+            self._regulation_service.sample_log.samples, Path(path)
         )
         if status is SampleExportStatus.FAILED:
             return tr("status.export_failed")
@@ -85,6 +93,6 @@ class ActionDispatcher:
         )
         if not path:
             return None
-        if not self._csv_service.save_template(path):
+        if not self._csv_service.save_template(Path(path)):
             return tr("status.export_failed")
         return tr("status.template_saved")

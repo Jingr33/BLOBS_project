@@ -100,6 +100,19 @@ STYLE_SHEET = f"""
         font-weight: 800;
         border: 2px solid {config.TEXT};
     }}
+    QTableWidget {{
+        background: {config.PANEL};
+        gridline-color: {config.PANEL_BORDER};
+        border: 1px solid {config.PANEL_BORDER};
+        font-size: 15px;
+    }}
+    QHeaderView::section {{
+        background: {config.BUTTON_BACKGROUND};
+        color: {config.MUTED};
+        border: 0;
+        padding: 6px;
+        font-size: 14px;
+    }}
     QLabel#alert {{ color: {config.RED}; font-weight: 700; }}
     QPushButton#small {{ padding: 6px 10px; }}
     QPushButton#nav {{

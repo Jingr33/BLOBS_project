@@ -5,13 +5,13 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PyQt6.QtWidgets import QApplication, QDoubleSpinBox, QLabel, QPushButton, QWidget
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
 
 from blobs_project import config
 from blobs_project.backend.csv_management import CsvService
 from blobs_project.backend.hardware import HardwareError, MockDAQ, Tower
 from blobs_project.backend.regulation import (
-    CsvProfileError,
+    CsvError,
     ProfileLoader,
     RegulationControllerBase,
     RegulationService,
@@ -19,6 +19,7 @@ from blobs_project.backend.regulation import (
 from blobs_project.frontend.actions import ActionDispatcher, ActionId
 from blobs_project.frontend.frames.footer_frame import FooterFrame
 from blobs_project.frontend.frames.regulation_frame import RegulationFrame
+from blobs_project.frontend.widgets.tank_control import TankControl
 
 _APP = QApplication.instance() or QApplication([])
 
@@ -167,7 +168,7 @@ def test_profile_rejects_levels_outside_the_setpoint_range(tmp_path: Path) -> No
     path = tmp_path / "profile.csv"
     path.write_text("hladina_cm\n10\n25\n", encoding="utf-8")
 
-    with pytest.raises(CsvProfileError, match="line 3"):
+    with pytest.raises(CsvError, match="line 3"):
         ProfileLoader.load_profile(path)
 
 
@@ -175,14 +176,15 @@ def test_profile_rejects_nan_level(tmp_path: Path) -> None:
     path = tmp_path / "profile.csv"
     path.write_text(f"10\n{math.nan}\n", encoding="utf-8")
 
-    with pytest.raises(CsvProfileError):
+    with pytest.raises(CsvError):
         ProfileLoader.load_profile(path)
 
 
 def test_desired_spin_box_allows_only_the_setpoint_range() -> None:
     frame = RegulationFrame(RegulationService())
-    spin = frame.findChild(QDoubleSpinBox)
-    assert spin is not None
+    control = frame.findChild(TankControl)
+    assert control is not None
+    spin = control.desired_spin
 
     assert spin.minimum() == config.SETPOINT_MIN_CM
     assert spin.maximum() == config.SETPOINT_MAX_CM
