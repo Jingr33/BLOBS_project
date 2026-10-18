@@ -6,9 +6,10 @@ import pytest
 from PyQt6.QtWidgets import QApplication
 
 from blobs_project import config
+from blobs_project.backend.dtos import Sample
 from blobs_project.backend.hardware import SimulatedDAQ, Tower
-from blobs_project.backend.regulation import RegulationService, Sample
-from blobs_project.backend.statistics import run_statistics
+from blobs_project.backend.regulation import RegulationService
+from blobs_project.backend.statistics import StatisticsCalculator
 from blobs_project.frontend.widgets.statistics_view import StatisticsView
 
 _APP = QApplication.instance() or QApplication([])
@@ -24,7 +25,7 @@ def samples_of(
 
 
 def test_empty_run_has_no_statistics() -> None:
-    statistics = run_statistics([])
+    statistics = StatisticsCalculator.calculate([])
 
     assert statistics.steps == ()
     assert statistics.efficiency_percent is None
@@ -38,7 +39,7 @@ def test_energy_integrates_the_pump_power() -> None:
         Sample(3600.0, 10.0, 10.0, 0.0, 10.0),
     ]
 
-    statistics = run_statistics(samples)
+    statistics = StatisticsCalculator.calculate(samples)
 
     assert statistics.energy_wh == pytest.approx(10.0)
     assert statistics.mean_power_w == pytest.approx(10.0)
@@ -47,7 +48,7 @@ def test_energy_integrates_the_pump_power() -> None:
 def test_step_metrics_of_an_overshooting_response() -> None:
     """A 0 -> 10 cm step that peaks at 12 cm and then settles at 10 cm."""
     levels = [0, 2, 5, 8, 9.5, 11, 12, 11, 10.4, 10.1, 10, 10, 10]
-    statistics = run_statistics(samples_of(levels, 10.0))
+    statistics = StatisticsCalculator.calculate(samples_of(levels, 10.0))
 
     (step,) = statistics.steps
     assert (step.from_cm, step.to_cm) == (0.0, 10.0)
@@ -59,7 +60,7 @@ def test_step_metrics_of_an_overshooting_response() -> None:
 
 def test_step_without_overshoot_has_no_peak_time() -> None:
     levels = [0, 3, 6, 8, 9, 9.6, 9.9, 10, 10]
-    (step,) = run_statistics(samples_of(levels, 10.0)).steps
+    (step,) = StatisticsCalculator.calculate(samples_of(levels, 10.0)).steps
 
     assert step.overshoot_percent == 0.0
     assert step.peak_time_s is None
@@ -69,21 +70,21 @@ def test_step_without_overshoot_has_no_peak_time() -> None:
 def test_overshoot_within_sensor_noise_is_not_counted() -> None:
     """Exceeding a 10 cm step by 0.5 mm is noise, not overshoot."""
     levels = [0, 4, 8, 9.6, 10.05, 10.0, 10.0]
-    (step,) = run_statistics(samples_of(levels, 10.0)).steps
+    (step,) = StatisticsCalculator.calculate(samples_of(levels, 10.0)).steps
 
     assert step.overshoot_percent == 0.0
     assert step.peak_time_s is None
 
 
 def test_unsettled_step_has_no_settling_time() -> None:
-    (step,) = run_statistics(samples_of([0, 3, 6, 8], 10.0)).steps
+    (step,) = StatisticsCalculator.calculate(samples_of([0, 3, 6, 8], 10.0)).steps
 
     assert step.settling_time_s is None
 
 
 def test_downward_step_is_measured_like_an_upward_one() -> None:
     levels = [15, 13, 11, 10.2, 10, 10]
-    (step,) = run_statistics(samples_of(levels, 10.0)).steps
+    (step,) = StatisticsCalculator.calculate(samples_of(levels, 10.0)).steps
 
     assert (step.from_cm, step.to_cm) == (15.0, 10.0)
     assert step.rise_time_s is not None
@@ -96,7 +97,7 @@ def test_every_setpoint_change_starts_a_new_step() -> None:
         Sample(5.0, 12.0, 12.0),
     ]
 
-    steps = run_statistics(samples).steps
+    steps = StatisticsCalculator.calculate(samples).steps
 
     assert [(s.start_s, s.from_cm, s.to_cm) for s in steps] == [
         (0.0, 0.0, 10.0),
@@ -108,7 +109,7 @@ def test_efficiency_skips_the_time_after_a_change() -> None:
     """Off by 5 mm during the skip window, then half of the time within 1 mm."""
     skip = int(config.EFFICIENCY_SKIP_S)
     levels = [9.5] * skip + [10.0] * 100 + [10.5] * 100
-    statistics = run_statistics(samples_of(levels, 10.0))
+    statistics = StatisticsCalculator.calculate(samples_of(levels, 10.0))
 
     assert statistics.efficiency_percent == pytest.approx(50.0, abs=1.0)
 
@@ -135,7 +136,7 @@ def test_statistics_view_lists_the_steps() -> None:
     view = StatisticsView()
     levels = [0, 2, 5, 8, 9.5, 11, 12, 11, 10.4, 10.1, 10, 10, 10]
 
-    view.set_statistics(run_statistics(samples_of(levels, 10.0)))
+    view.set_statistics(StatisticsCalculator.calculate(samples_of(levels, 10.0)))
 
     assert view.table.rowCount() == 1
     items = [view.table.item(0, column) for column in range(6)]

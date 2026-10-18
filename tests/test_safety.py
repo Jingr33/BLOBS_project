@@ -11,7 +11,7 @@ from blobs_project import config
 from blobs_project.backend.csv_management import CsvService
 from blobs_project.backend.hardware import HardwareError, MockDAQ, Tower
 from blobs_project.backend.regulation import (
-    CsvProfileError,
+    CsvError,
     ProfileLoader,
     RegulationControllerBase,
     RegulationService,
@@ -168,7 +168,7 @@ def test_profile_rejects_levels_outside_the_setpoint_range(tmp_path: Path) -> No
     path = tmp_path / "profile.csv"
     path.write_text("hladina_cm\n10\n25\n", encoding="utf-8")
 
-    with pytest.raises(CsvProfileError, match="line 3"):
+    with pytest.raises(CsvError, match="line 3"):
         ProfileLoader.load_profile(path)
 
 
@@ -176,7 +176,7 @@ def test_profile_rejects_nan_level(tmp_path: Path) -> None:
     path = tmp_path / "profile.csv"
     path.write_text(f"10\n{math.nan}\n", encoding="utf-8")
 
-    with pytest.raises(CsvProfileError):
+    with pytest.raises(CsvError):
         ProfileLoader.load_profile(path)
 
 

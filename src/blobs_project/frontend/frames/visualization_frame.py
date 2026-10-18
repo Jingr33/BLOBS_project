@@ -9,8 +9,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from blobs_project.backend.dtos.regulation_values import RegulationValues
-from blobs_project.backend.statistics import RunStatistics
+from blobs_project.backend.dtos import RegulationValues, RunStatistics
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.frontend.widgets.statistics_view import StatisticsView
 from blobs_project.frontend.widgets.tank_diagram import TankDiagram

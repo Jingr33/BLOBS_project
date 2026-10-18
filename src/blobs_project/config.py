@@ -62,7 +62,7 @@ DEVIATION_OK_PERCENT: Final = 5.0
 
 PROFILE_DURATION_S: Final = 120.0
 PROFILE_SAMPLE_INTERVAL_S: Final = 1.0
-# Default time one scenario level is held [s]; the operator can change it.
+# Default time one profile level is held [s]; the operator can change it.
 PROFILE_STEP_S: Final = 300.0
 
 # NI DAQ / tower hardware

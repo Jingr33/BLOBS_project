@@ -22,7 +22,7 @@ def test_translation_returns_string_for_known_key() -> None:
 def test_translation_formats_placeholders() -> None:
     assert (
         tr("regulation.profile_loaded", rows=3, step=5.0, total=15.0)
-        == "Scenario: 3 × 5 min = 15 min"
+        == "Profile: 3 × 5 min = 15 min"
     )
 
 

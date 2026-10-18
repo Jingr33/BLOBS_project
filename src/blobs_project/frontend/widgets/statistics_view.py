@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from blobs_project.backend.statistics import RunStatistics, StepMetrics
+from blobs_project.backend.dtos import RunStatistics, StepMetrics
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.translations import tr
 

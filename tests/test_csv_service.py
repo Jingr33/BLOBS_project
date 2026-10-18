@@ -37,7 +37,7 @@ def test_export_samples_writes_the_recorded_samples(tmp_path: Path) -> None:
     )
     header = path.read_text(encoding="utf-8").splitlines()[0]
     assert (
-        header == "time_s;desired_cm;actual_cm;pump_voltage_v;pump_power_w;flow_l_min"
+        header == "time_s,desired_cm,actual_cm,pump_voltage_v,pump_power_w,flow_l_min"
     )
 
 
@@ -64,8 +64,8 @@ def test_export_samples_reports_a_file_error(tmp_path: Path) -> None:
     )
 
 
-def test_save_template_writes_a_loadable_scenario(tmp_path: Path) -> None:
-    """The template has a header and example levels with a decimal comma."""
+def test_save_template_writes_a_loadable_profile(tmp_path: Path) -> None:
+    """The template has a header and example levels that load as a profile."""
     csv_service = CsvService()
     path = tmp_path / "template.csv"
 

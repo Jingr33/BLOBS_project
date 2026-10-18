@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
 from PyQt6.QtWidgets import QFileDialog, QWidget
 
@@ -55,7 +56,7 @@ class ActionDispatcher:
         )
         if not path:
             return None
-        loaded = self._csv_service.load(path)
+        loaded = self._csv_service.load(Path(path))
         if loaded is None:
             return tr("status.profile_invalid")
         if isinstance(loaded, CsvProfile):
@@ -75,7 +76,7 @@ class ActionDispatcher:
         if not path:
             return None
         status = self._csv_service.export_samples(
-            self._regulation_service.sample_log.samples, path
+            self._regulation_service.sample_log.samples, Path(path)
         )
         if status is SampleExportStatus.FAILED:
             return tr("status.export_failed")
@@ -92,6 +93,6 @@ class ActionDispatcher:
         )
         if not path:
             return None
-        if not self._csv_service.save_template(path):
+        if not self._csv_service.save_template(Path(path)):
             return tr("status.export_failed")
         return tr("status.template_saved")
