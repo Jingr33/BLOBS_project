@@ -12,6 +12,7 @@ from blobs_project.translations import tr
 
 class HeaderFrame(QFrame):
     action_requested = pyqtSignal(object)
+    emergency_stop_requested = pyqtSignal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -32,6 +33,7 @@ class HeaderFrame(QFrame):
         layout.addWidget(ClockWidget())
         layout.addStretch()
         self._add_actions(layout)
+        self._add_emergency_stop_button(layout)
 
     def _add_actions(self, layout: QHBoxLayout) -> None:
         for action_id in visible_actions(ActionPlace.HEADER):
@@ -45,6 +47,12 @@ class HeaderFrame(QFrame):
                 action_id
             )
         )
+        layout.addWidget(button)
+
+    def _add_emergency_stop_button(self, layout: QHBoxLayout) -> None:
+        button = QPushButton(tr("regulation.emergency_stop"))
+        button.setObjectName("emergency")
+        button.clicked.connect(self.emergency_stop_requested.emit)
         layout.addWidget(button)
 
     @staticmethod

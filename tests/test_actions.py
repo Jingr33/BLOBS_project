@@ -11,10 +11,9 @@ def test_every_action_is_registered() -> None:
     assert set(HEADER_ACTIONS) == set(ActionId)
 
 
-def test_header_offers_export_csv_before_force_reset() -> None:
+def test_header_offers_export_csv_before_other_actions() -> None:
     assert list(visible_actions(ActionPlace.HEADER)) == [
         ActionId.EXPORT_CSV,
-        ActionId.FORCE_RESET,
         ActionId.DOWNLOAD_CSV_TEMPLATE,
         ActionId.TARE,
     ]

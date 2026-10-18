@@ -55,7 +55,7 @@ def test_main_window_composes_separate_frames() -> None:
     app.processEvents()
 
 
-def test_header_offers_export_csv_before_force_reset() -> None:
+def test_header_offers_available_actions() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
@@ -66,9 +66,9 @@ def test_header_offers_export_csv_before_force_reset() -> None:
 
     assert labels == [
         "Export CSV data",
-        "Force reset",
         "Download CSV template",
         "Tare",
+        "EMERGENCY STOP",
     ]
 
     window.close()
@@ -123,7 +123,6 @@ def test_regulation_frame_offers_regulation_import_and_automatic() -> None:
 
     assert labels == [
         "Start regulation",
-        "EMERGENCY STOP",
         "Import CSV data",
         "Start automatic regulation",
     ]
@@ -161,7 +160,7 @@ def test_regulation_toggle_switches_between_start_and_stop() -> None:
 
     buttons = frame.findChildren(QPushButton)
     regulation = buttons[0]
-    automatic = buttons[3]
+    automatic = buttons[2]
     assert regulation.text() == "Start regulation"
     assert regulation.objectName() == "primary"
     assert automatic.text() == "Start automatic regulation"
@@ -202,28 +201,6 @@ def _window_parts() -> tuple[
     assert header is not None and frame is not None
     assert footer is not None and preview is not None
     return app, window, header, frame, footer, preview
-
-
-def test_force_reset_stops_regulation_and_clears_the_chart() -> None:
-    app, window, header, frame, footer, preview = _window_parts()
-    reset_button = next(
-        button
-        for button in header.findChildren(QPushButton)
-        if button.text() == "Force reset"
-    )
-    regulation = frame.findChildren(QPushButton)[0]
-    regulation.click()
-    assert regulation.text() == "Stop regulation"
-
-    reset_button.click()
-    app.processEvents()
-
-    assert regulation.text() == "Start regulation"
-    assert footer.time_label.text() == "no regulation is running"
-    assert "Regulation reset" in footer.status_label.text()
-
-    window.close()
-    app.processEvents()
 
 
 def test_footer_shows_the_regulation_time_while_running() -> None:

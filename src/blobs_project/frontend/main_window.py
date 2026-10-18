@@ -35,6 +35,7 @@ class MainWindow(QMainWindow):
         self._visualization = VisualizationFrame()
         self._footer = FooterFrame()
         self._header.action_requested.connect(self._handle_action_requested)
+        self._header.emergency_stop_requested.connect(self._handle_emergency_stop)
         self._regulation_frame.action_requested.connect(self._handle_action_requested)
         self._regulation_frame.status_changed.connect(self._footer.set_status)
 
@@ -72,6 +73,17 @@ class MainWindow(QMainWindow):
         if message is not None:
             self._footer.set_status(message)
         self._refresh_view()
+        self._previous_state = (
+            self._regulation_service.regulation_active,
+            self._regulation_service.self_driven_active,
+        )
+
+    def _handle_emergency_stop(self) -> None:
+        self._regulation_service.emergency_stop()
+        self._refresh_view()
+        fault = self._regulation_service.fault
+        if fault is not None:
+            self._footer.set_status(tr("status.fault", reason=fault), alert=True)
         self._previous_state = (
             self._regulation_service.regulation_active,
             self._regulation_service.self_driven_active,

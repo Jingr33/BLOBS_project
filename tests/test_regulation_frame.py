@@ -21,7 +21,7 @@ def _frame(regulation_service: RegulationService) -> RegulationFrame:
 
 def _buttons(frame: RegulationFrame) -> tuple[QPushButton, QPushButton]:
     buttons = frame.findChildren(QPushButton)
-    return buttons[0], buttons[3]
+    return buttons[0], buttons[2]
 
 
 def _profile_label(frame: RegulationFrame) -> QLabel:
