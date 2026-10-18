@@ -134,26 +134,6 @@ def test_starting_a_run_clears_the_chart_and_resets_the_time() -> None:
     assert regulation_service.chart_started
 
 
-def test_force_reset_stops_both_modes_and_clears_the_chart(tmp_path: Path) -> None:
-    path = tmp_path / "profile.csv"
-    path.write_text("20.0\n21.0\n", encoding="utf-8")
-    regulation_service = RegulationService()
-    regulation_service.set_step_s(1.0)
-    regulation_service.set_profile(ProfileLoader.load_profile(path))
-    regulation_service.regulation_values.tank2_desired_cm = 25.0
-    regulation_service.toggle_self_driven()
-    for _ in range(10):
-        regulation_service.tick(0.1)
-
-    regulation_service.force_reset()
-
-    assert not regulation_service.is_running
-    assert regulation_service.trend_points() == []
-    assert regulation_service.elapsed_s == 0.0
-    assert regulation_service.regulation_values.tank2_desired_cm == 0.0
-    assert regulation_service.chart_started
-
-
 def test_desired_trend_points_track_the_setpoint() -> None:
     regulation_service = RegulationService()
     regulation_service.regulation_values.tank2_desired_cm = 25.0
@@ -240,7 +220,3 @@ def test_total_energy_accumulates_while_the_pump_runs() -> None:
         regulation_service.tick(0.1)
 
     assert regulation_service.regulation_values.total_energy_wh > 0.0
-
-    regulation_service.force_reset()
-
-    assert regulation_service.regulation_values.total_energy_wh == 0.0

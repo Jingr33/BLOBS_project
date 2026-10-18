@@ -53,14 +53,7 @@ class RegulationFrame(QFrame):
         self._regulation_button = self._build_button(
             tr("regulation.start_regulation"), "primary", self._toggle_regulation
         )
-        self._stop_button = self._build_button(
-            tr("regulation.emergency_stop"), "emergency", self._emergency_stop
-        )
-        run_row = QHBoxLayout()
-        run_row.setSpacing(8)
-        run_row.addWidget(self._regulation_button, 1)
-        run_row.addWidget(self._stop_button, 1)
-        layout.addLayout(run_row)
+        layout.addWidget(self._regulation_button)
         layout.addSpacing(18)
         self._automatic_button = self._build_button(
             tr("regulation.start_automatic"), "primary", self._toggle_automatic
@@ -200,10 +193,6 @@ class RegulationFrame(QFrame):
 
     def _toggle_regulation(self) -> None:
         self._regulation_service.toggle_regulation()
-        self.sync()
-
-    def _emergency_stop(self) -> None:
-        self._regulation_service.emergency_stop()
         self.sync()
 
     def _toggle_automatic(self) -> None:

@@ -207,14 +207,6 @@ class RegulationService:
         self._level_filter.clear()
         return self._tower.tare(config.TARE_SAMPLES, config.TARE_INTERVAL_S)
 
-    def force_reset(self) -> None:
-        self._regulation_active = False
-        self._self_driven_active = False
-        self._profile_finished = False
-        self._reset_run_state()
-        self.regulation_values.tank2_desired_cm = 0.0
-        self._stop_pump()
-
     def tick(self, dt_s: float) -> None:
         if dt_s <= 0:
             return
