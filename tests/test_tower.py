@@ -54,6 +54,28 @@ def test_custom_calibration() -> None:
     assert tower.read_level_cm() == pytest.approx(2.0)
 
 
+@pytest.mark.parametrize("max_pump_v", [7.5001, float("nan"), float("inf"), -0.1])
+def test_calibration_rejects_unsafe_pump_caps(max_pump_v: float) -> None:
+    with pytest.raises(ValueError):
+        TowerCalibration(max_pump_v=max_pump_v)
+
+
+@pytest.mark.parametrize(
+    "calibration",
+    [
+        {"cm_per_v": 0.0},
+        {"cm_per_v": float("inf")},
+        {"zero_v": float("nan")},
+        {"offset_cm": float("nan")},
+        {"level_channel": ""},
+        {"pump_channel": "  "},
+    ],
+)
+def test_calibration_rejects_invalid_values(calibration: dict[str, Any]) -> None:
+    with pytest.raises(ValueError):
+        TowerCalibration(**calibration)
+
+
 def test_pump_clamped_high() -> None:
     """A request above 7.5 V applies 7.5 V on ao1."""
     tower, daq = make_tower()

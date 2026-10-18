@@ -94,6 +94,8 @@ PI_MIN_V: Final = 1.5
 LEVEL_MEDIAN_SAMPLES: Final = 5
 # Invalid level readings in a row before the run stops.
 MAX_INVALID_SAMPLES: Final = 5
+# Time horizon for projecting a rising lower-tank level to the warning threshold.
+LEVEL_PREDICTION_HORIZON_S: Final = 10.0
 
 # safety limits
 # Allowed desired level of the lower tank [cm].

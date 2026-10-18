@@ -41,6 +41,17 @@ class _FailingDAQ(MockDAQ):
         raise HardwareError("card unplugged")
 
 
+class _FailingWriteDAQ(MockDAQ):
+    def __init__(self) -> None:
+        super().__init__()
+        self.fail_writes = False
+
+    def write_voltage(self, channel: str, value: float) -> None:
+        if self.fail_writes:
+            raise HardwareError("write failed")
+        super().write_voltage(channel, value)
+
+
 def make_service(level_cm: float) -> tuple[RegulationService, MockDAQ]:
     """Return a service on a mocked tower whose sensor reads ``level_cm``."""
     daq = MockDAQ()
@@ -98,6 +109,48 @@ def test_high_level_stops_the_run() -> None:
     assert not service.is_running
     assert pump_v(daq) == 0.0
     assert service.fault is not None and "reached" in service.fault
+
+
+def test_level_observer_warns_before_the_warning_level_is_reached() -> None:
+    service, daq = make_service(18.0)
+    run(service, 1.0)
+    assert not service.overflow_warning
+
+    set_level(daq, 20.0)
+    run(service, 1.0)
+
+    assert service.regulation_values.tank2_actual_cm < config.LEVEL_WARNING_CM
+    assert service.predicted_level_cm is not None
+    assert service.predicted_level_cm >= config.LEVEL_WARNING_CM
+    assert service.overflow_warning
+
+
+def test_failed_pump_stop_is_reported_as_uncertain() -> None:
+    daq = _FailingWriteDAQ()
+    service = RegulationService(_RecordingController(), Tower(daq))
+    service.toggle_regulation()
+    run(service, 1.0)
+    assert service.regulation_values.pump_voltage_v == 5.0
+    daq.fail_writes = True
+
+    service.toggle_regulation()
+
+    assert not service.is_running
+    assert service.pump_state_uncertain
+    assert service.regulation_values.pump_voltage_v == 5.0
+    assert service.fault is not None and "pump off unconfirmed" in service.fault
+
+
+def test_regulation_does_not_start_when_pump_zero_cannot_be_confirmed() -> None:
+    daq = _FailingWriteDAQ()
+    daq.fail_writes = True
+    service = RegulationService(_RecordingController(), Tower(daq))
+
+    service.toggle_regulation()
+
+    assert not service.is_running
+    assert service.pump_state_uncertain
+    assert service.fault is not None and "pump off unconfirmed" in service.fault
 
 
 def test_overflow_warning_follows_the_level() -> None:
@@ -206,6 +259,25 @@ def test_emergency_button_stops_and_shows_the_reason() -> None:
     assert pump_v(daq) == 0.0
     assert not alert.isHidden()
     assert alert.text() == "Stopped: emergency stop"
+
+
+def test_voltage_label_does_not_claim_zero_after_failed_stop() -> None:
+    daq = _FailingWriteDAQ()
+    service = RegulationService(_RecordingController(), Tower(daq))
+    frame = RegulationFrame(service)
+    service.toggle_regulation()
+    run(service, 1.0)
+    daq.fail_writes = True
+
+    service.emergency_stop()
+    frame.sync()
+
+    voltage = next(
+        label
+        for label in frame.findChildren(QLabel)
+        if label.text().startswith("Output unknown")
+    )
+    assert "last confirmed 5.00 V" in voltage.text()
 
 
 def test_tare_action_reports_the_result() -> None:

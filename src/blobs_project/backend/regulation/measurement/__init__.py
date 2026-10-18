@@ -1,4 +1,4 @@
-from .level_filter import LevelFilter
+from .level_filter import LevelFilter, LevelObserver
 from .process_model import ProcessModel
 
-__all__ = ["LevelFilter", "ProcessModel"]
+__all__ = ["LevelFilter", "LevelObserver", "ProcessModel"]

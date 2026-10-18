@@ -11,7 +11,7 @@ from blobs_project.backend.statistics import StatisticsCalculator
 from blobs_project.backend.timekeeping import Stopwatch
 
 from .controllers import PIRegulationController, RegulationControllerBase
-from .measurement import LevelFilter, ProcessModel
+from .measurement import LevelFilter, LevelObserver, ProcessModel
 from .profile import CsvProfile, ProfileRequiredError, ProfileSchedule
 from .recording import SampleLog
 from .safety_guard import SafetyGuard
@@ -33,9 +33,11 @@ class RegulationService:
         self._controller = ctrl or PIRegulationController()
         self._tower = tower or Tower(SimulatedDAQ())
         self._level_filter = LevelFilter(config.LEVEL_MEDIAN_SAMPLES)
+        self._level_observer = LevelObserver(config.LEVEL_MEDIAN_SAMPLES)
         self._since_control_s = 0.0
         self._fault: str | None = None
         self._statistics = StatisticsCalculator.calculate(())
+        self._pump_state_uncertain = False
         self._statistics_key: tuple[int, float] = (0, 0.0)
         self._regulation_active = False
         self._self_driven_active = False
@@ -79,8 +81,23 @@ class RegulationService:
 
     @property
     def overflow_warning(self) -> bool:
-        """Return whether the lower tank is close to overflowing."""
-        return self._safety.overflow_warning(self.regulation_values.tank2_actual_cm)
+        """Return whether the level is high or projected to reach the warning level."""
+        predicted = self._level_observer.predict(config.LEVEL_PREDICTION_HORIZON_S)
+        return (
+            self._safety.overflow_warning(self.regulation_values.tank2_actual_cm)
+            or predicted is not None
+            and predicted >= config.LEVEL_WARNING_CM
+        )
+
+    @property
+    def pump_state_uncertain(self) -> bool:
+        """Return whether a pump command failed and its physical state is unknown."""
+        return self._pump_state_uncertain
+
+    @property
+    def predicted_level_cm(self) -> float | None:
+        """Return the projected level over the configured prediction horizon."""
+        return self._level_observer.predict(config.LEVEL_PREDICTION_HORIZON_S)
 
     def open(self) -> None:
         """Open the tower; the pump starts at 0 V."""
@@ -175,6 +192,8 @@ class RegulationService:
             self._regulation_active = False
             self._stop_pump()
             return
+        if not self._stop_pump():
+            return
         self._self_driven_active = False
         self._profile_finished = False
         self._reset_run_state()
@@ -187,6 +206,8 @@ class RegulationService:
             return
         if self._schedule.profile is None:
             raise ProfileRequiredError("no profile imported")
+        if not self._stop_pump():
+            return
         self._regulation_active = False
         self._profile_finished = False
         self._reset_run_state()
@@ -205,6 +226,7 @@ class RegulationService:
         if self.is_running:
             raise RuntimeError("stop the regulation before taring")
         self._level_filter.clear()
+        self._level_observer.clear()
         return self._tower.tare(config.TARE_SAMPLES, config.TARE_INTERVAL_S)
 
     def force_reset(self) -> None:
@@ -222,10 +244,12 @@ class RegulationService:
         due = self._since_control_s >= config.CONTROL_PERIOD_S
         if not self.is_running:
             self.regulation_values.reset_flow()
-            self.regulation_values.reset_pump()
+            if not self._pump_state_uncertain:
+                self.regulation_values.reset_pump()
             if due:
+                monitor_dt_s = self._since_control_s
                 self._since_control_s = 0.0
-                self._monitor_step()
+                self._monitor_step(monitor_dt_s)
             return
         self._stopwatch.advance(dt_s)
         if self._self_driven_active:
@@ -263,11 +287,11 @@ class RegulationService:
         self._sample_log.clear()
         self._controller.reset()
         self._level_filter.clear()
+        self._level_observer.clear()
         self._since_control_s = 0.0
         self._safety.reset()
         self._fault = None
         self.regulation_values.reset_flow()
-        self.regulation_values.reset_pump()
         self.regulation_values.reset_energy()
 
     def _apply_profile_desired(self) -> None:
@@ -277,7 +301,7 @@ class RegulationService:
             return
         self.regulation_values.tank2_desired_cm = desired_cm
 
-    def _monitor_step(self) -> None:
+    def _monitor_step(self, dt_s: float) -> None:
         """Read the level while no run is active; a lost card is reported once."""
         try:
             level_cm = self._level_filter(self._tower.read_level_cm())
@@ -288,6 +312,7 @@ class RegulationService:
             return
         if math.isfinite(level_cm):
             self.regulation_values.tank2_actual_cm = level_cm
+            self._level_observer.observe(level_cm, dt_s)
 
     def _control_step(self, dt_s: float) -> None:
         """Read the level, run the controller and drive the pump."""
@@ -300,10 +325,12 @@ class RegulationService:
             if not math.isfinite(level_cm):
                 return
             self.regulation_values.tank2_actual_cm = level_cm
+            self._level_observer.observe(level_cm, dt_s)
             desired = self.regulation_values.tank2_desired_cm
             desired_cm = self._safety.clamp_setpoint_cm(desired)
             volts = self._controller.compute(dt_s, desired_cm, level_cm)
             applied = self._tower.set_pump_voltage(volts)
+            self._pump_state_uncertain = False
         except (HardwareError, ValueError) as e:
             self._stop_on_fault(f"tower error: {e}")
             return
@@ -319,14 +346,23 @@ class RegulationService:
         self._self_driven_active = False
         self._stop_pump()
 
-    def _stop_pump(self) -> None:
-        """Set the pump to 0 V; a failing write is logged, never raised."""
+    def _stop_pump(self) -> bool:
+        """Set the pump to 0 V; report when its physical state cannot be confirmed."""
         try:
             self._tower.stop_pump()
-        except HardwareError:
+        except HardwareError as e:
+            self._pump_state_uncertain = True
             logger.exception("could not stop the pump")
+            failure = f"pump off unconfirmed: {e}"
+            self._fault = (
+                f"{self._fault}; {failure}" if self._fault is not None else failure
+            )
+            self.regulation_values.reset_flow()
+            return False
+        self._pump_state_uncertain = False
         self.regulation_values.reset_flow()
         self.regulation_values.reset_pump()
+        return True
 
     def _record_sample(self) -> None:
         if not self._stopwatch.sample_due:

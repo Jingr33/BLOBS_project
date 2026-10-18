@@ -28,6 +28,29 @@ class TowerCalibration:
     offset_cm: float = config.TOWER_LEVEL_OFFSET_CM
     max_pump_v: float = config.TOWER_PUMP_MAX_V
 
+    def __post_init__(self) -> None:
+        numeric_values = {
+            "cm_per_v": self.cm_per_v,
+            "zero_v": self.zero_v,
+            "offset_cm": self.offset_cm,
+            "max_pump_v": self.max_pump_v,
+        }
+        for name, value in numeric_values.items():
+            if not math.isfinite(value):
+                raise ValueError(f"{name} must be finite")
+        if self.cm_per_v <= 0:
+            raise ValueError("cm_per_v must be positive")
+        if not 0 <= self.max_pump_v <= config.TOWER_PUMP_MAX_V:
+            raise ValueError(
+                f"max_pump_v must be between 0 and {config.TOWER_PUMP_MAX_V} V"
+            )
+        for name, channel in (
+            ("level_channel", self.level_channel),
+            ("pump_channel", self.pump_channel),
+        ):
+            if not isinstance(channel, str) or not channel.strip():
+                raise ValueError(f"{name} must not be empty")
+
 
 class Tower:
     """Calibrated, safe access to one tower through any ``DAQ_base``.

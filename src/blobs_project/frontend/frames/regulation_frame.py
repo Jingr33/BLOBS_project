@@ -166,7 +166,10 @@ class RegulationFrame(QFrame):
 
     def _set_voltage_label(self) -> None:
         volts = self._regulation_service.regulation_values.pump_voltage_v
-        if self._regulation_service.pump_at_limit:
+        if self._regulation_service.pump_state_uncertain:
+            self._voltage_label.setText(tr("regulation.voltage_unknown", value=volts))
+            self._voltage_label.setStyleSheet(f"color: {config.RED};")
+        elif self._regulation_service.pump_at_limit:
             self._voltage_label.setText(tr("regulation.voltage_limit", value=volts))
             self._voltage_label.setStyleSheet(f"color: {config.ORANGE};")
         else:
@@ -178,7 +181,10 @@ class RegulationFrame(QFrame):
         if fault is not None:
             text = tr("regulation.fault", reason=fault)
         elif self._regulation_service.overflow_warning:
-            text = tr("regulation.overflow_warning")
+            predicted = self._regulation_service.predicted_level_cm
+            current = self._regulation_service.regulation_values.tank2_actual_cm
+            level = max(current, predicted if predicted is not None else current)
+            text = tr("regulation.overflow_warning", level=level)
         else:
             text = ""
         self._alert_label.setText(text)
