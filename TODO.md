@@ -29,8 +29,8 @@ checks are complete.
 
 ## Issue #25 — Klárka's predictive level controller
 
-- [x] Cherry-pick and integrate Klárka's model/observer/MPC draft into the
-  regulation controller package.
+- [x] Integrate Klárka's model/observer/MPC into the production regulation
+  controller package; remove the obsolete standalone draft implementation.
 - [x] Linearize and discretize the identified two-tank model at the requested
   setpoint; use a Kalman filter to estimate the unmeasured upper-tank height
   from pump voltage and lower-tank sensor readings.
