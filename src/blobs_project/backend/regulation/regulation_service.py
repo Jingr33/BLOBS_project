@@ -18,7 +18,6 @@ from blobs_project.backend.timekeeping import Stopwatch
 from .controllers import (
     ControllerError,
     MPCRegulationController,
-    PIRegulationController,
     PlantParams,
     RegulationControllerBase,
 )
