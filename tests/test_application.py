@@ -97,17 +97,18 @@ def test_visualization_frame_switches_between_pages() -> None:
     app.processEvents()
 
 
-def test_header_displays_the_blobs_logo() -> None:
+def test_header_has_no_logo_and_window_uses_the_logo_icon() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
     header = window.findChild(HeaderFrame)
     assert header is not None
 
-    logo = header.findChild(QLabel, "logo")
-    assert logo is not None
-    assert logo.pixmap() is not None
-    assert not logo.pixmap().isNull()
+    assert header.findChild(QLabel, "logo") is None
+
+    icon = window.windowIcon()
+    assert not icon.isNull()
+    assert not icon.pixmap(64, 64).isNull()
 
     window.close()
     app.processEvents()
