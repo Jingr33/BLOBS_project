@@ -29,22 +29,21 @@ checks are complete.
 
 ## Issue #25 — Klárka's predictive level controller
 
-- [ ] Confirm the required predictive-control design and acceptance criteria:
-  plant model/version, control and prediction horizons, cost weights, pump
-  slew/output constraints, and target-change behavior.
-- [ ] Integrate the identified two-tank model and a tested state estimator.
-  The lower-tank sensor alone does not directly measure the upper-tank state;
-  define estimator initialization and uncertainty handling.
-- [ ] Implement the predictive controller behind the existing controller
-  interface, preserving output bounds and safe fallback behavior.
-- [ ] Decide whether to port the existing draft MPC implementation or replace
-  it; its draft currently depends on `do-mpc`, NumPy, and SciPy and has not been
-  integrated or validated in this application.
-- [ ] Add deterministic unit tests for model predictions, observer convergence,
-  constraints, target changes, invalid measurements, and controller reset.
-- [ ] Compare PI and predictive-control performance on the simulator and
-  recorded runs; document tuning and acceptance thresholds before enabling it
-  for hardware.
+- [x] Cherry-pick and integrate Klárka's model/observer/MPC draft into the
+  regulation controller package.
+- [x] Linearize and discretize the identified two-tank model at the requested
+  setpoint; use a Kalman filter to estimate the unmeasured upper-tank height
+  from pump voltage and lower-tank sensor readings.
+- [x] Add a finite-horizon MPC with voltage, tank-level, and pump slew
+  constraints; preserve the PI controller as an injectable alternative.
+- [x] Make MPC the default regulation controller and configure its output limit
+  from the active `Tower` calibration.
+- [x] Test model validity, observer state estimation, MPC command/slew limits,
+  setpoint changes, reset behavior, simulated setpoint tracking, and controller
+  failure shutdown.
+- [ ] Compare predictive-control behavior with PI using recorded physical runs;
+  confirm estimator noise settings, horizon, weights, and tuning with the
+  hardware owner before live deployment.
 
 ## Issue #27 — Observer and overflow protection
 
