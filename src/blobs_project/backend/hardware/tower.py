@@ -121,7 +121,9 @@ class Tower:
     def read_level_cm(self) -> float:
         """Return the lower-tank level in cm above the tank bottom."""
         level_cm = (self.read_level_v() - self._zero_v) * self._cal.cm_per_v
-        return level_cm + self._cal.offset_cm
+        if not math.isfinite(level_cm):
+            return level_cm
+        return max(0.0, level_cm + self._cal.offset_cm)
 
     def set_pump_voltage(self, volts: float) -> float:
         """Clamp ``volts`` to the safe range, write it and return the applied value.

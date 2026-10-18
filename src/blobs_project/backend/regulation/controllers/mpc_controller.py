@@ -3,6 +3,7 @@
 import math
 import warnings
 
+import casadi
 import numpy as np
 from numpy.typing import NDArray
 
@@ -26,6 +27,7 @@ class MPCController:
         horizon: int = config.MPC_HORIZON_STEPS,
         move_weight: float = config.MPC_MOVE_WEIGHT,
         integral_gain: float = config.MPC_INTEGRAL_GAIN,
+        integral_limit_m_s: float = config.MPC_INTEGRAL_LIMIT_M_S,
         rate_limit_v_s: float = config.MPC_RATE_LIMIT_V_S,
     ) -> None:
         if horizon < 1:
@@ -34,6 +36,8 @@ class MPCController:
             raise ValueError("MPC move weight must be finite and non-negative")
         if not math.isfinite(integral_gain) or integral_gain < 0:
             raise ValueError("MPC integral gain must be finite and non-negative")
+        if not math.isfinite(integral_limit_m_s) or integral_limit_m_s <= 0:
+            raise ValueError("MPC integral limit must be finite and positive")
         if not math.isfinite(rate_limit_v_s) or rate_limit_v_s <= 0:
             raise ValueError("MPC slew limit must be finite and positive")
         self.params = params
@@ -42,6 +46,7 @@ class MPCController:
         self.horizon = horizon
         self.move_weight = move_weight
         self.integral_gain = integral_gain
+        self.integral_limit_m_s = integral_limit_m_s
         self.rate_limit_v_s = rate_limit_v_s
         self.integral_error_m_s = 0.0
         self.Ad, self.Bd, self.Cd, self.h_H_eq, self.u_eq = get_discrete_model(
@@ -78,9 +83,15 @@ class MPCController:
             self.model.set_rhs("h_H", self.h_H_eq + dh_H_next)
             self.model.set_rhs("h_L", self.target_h_L_m + dh_L_next)
             self.model.set_rhs("u", u_next)
+            integral_next = (
+                self.e_int + (self.h_L - self.target_h_L_m) * self.sample_period_s
+            )
             self.model.set_rhs(
                 "e_int",
-                self.e_int + (self.h_L - self.target_h_L_m) * self.sample_period_s,
+                casadi.fmin(
+                    casadi.fmax(integral_next, -self.integral_limit_m_s),
+                    self.integral_limit_m_s,
+                ),
             )
             self.model.setup()
 
@@ -144,7 +155,13 @@ class MPCController:
         at_max = u_prev_v >= self.params.u_max - 1e-6
         at_min = u_prev_v <= self.params.u_min + 1e-6
         if not ((at_max and error_m < 0.0) or (at_min and error_m > 0.0)):
-            self.integral_error_m_s += error_m * dt_s
+            self.integral_error_m_s = min(
+                max(
+                    self.integral_error_m_s + error_m * dt_s,
+                    -self.integral_limit_m_s,
+                ),
+                self.integral_limit_m_s,
+            )
 
         x0 = np.asarray(
             [h_H_hat_m, h_L_meas_m, u_prev_v, self.integral_error_m_s],
@@ -182,6 +199,11 @@ class MPCRegulationController(RegulationControllerBase):
         self._observer = None
         self._target_h_L_m = None
         self._last_output_v = 0.0
+
+    @property
+    def output_limits_v(self) -> tuple[float, float]:
+        """Return the MPC's pump-voltage bounds."""
+        return self._params.u_min, self._params.u_max
 
     def compute(self, dt_s: float, desired_cm: float, actual_cm: float) -> float:
         """Estimate the hidden state and return a pump command in volts."""

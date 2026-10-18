@@ -92,6 +92,8 @@ PI_KI: Final = 1.28
 MPC_HORIZON_STEPS: Final = 50
 MPC_MOVE_WEIGHT: Final = 0.1
 MPC_INTEGRAL_GAIN: Final = 0.010
+# Bound accumulated tracking error to prevent delayed-plant integral windup.
+MPC_INTEGRAL_LIMIT_M_S: Final = 1.0
 MPC_RATE_LIMIT_V_S: Final = 1.0
 MPC_PROCESS_NOISE_VARIANCE_M2: Final = 1e-6
 MPC_SENSOR_NOISE_VARIANCE_M2: Final = 1e-5

@@ -10,6 +10,11 @@ class ControllerError(Exception):
 class RegulationControllerBase(ABC):
     """Level controller: turns the desired and measured level into a pump voltage."""
 
+    @property
+    def output_limits_v(self) -> tuple[float, float] | None:
+        """Return controller output bounds, or ``None`` if they are unspecified."""
+        return None
+
     @abstractmethod
     def reset(self) -> None:
         """Forget the state of the previous run."""

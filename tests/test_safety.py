@@ -9,10 +9,16 @@ from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
 
 from blobs_project import config
 from blobs_project.backend.csv_management import CsvService
-from blobs_project.backend.hardware import HardwareError, MockDAQ, Tower
+from blobs_project.backend.hardware import (
+    HardwareError,
+    MockDAQ,
+    Tower,
+    TowerCalibration,
+)
 from blobs_project.backend.regulation import (
     CsvError,
     ControllerError,
+    MPCRegulationController,
     ProfileLoader,
     RegulationControllerBase,
     RegulationService,
@@ -118,6 +124,33 @@ def test_high_level_stops_the_run() -> None:
     assert not service.is_running
     assert pump_v(daq) == 0.0
     assert service.fault is not None and "reached" in service.fault
+
+
+def test_raw_high_level_stops_without_waiting_for_median_filter() -> None:
+    service, daq = make_service(10.0)
+    service.toggle_regulation()
+    run(service, 2.0)
+    assert service.is_running
+
+    set_level(daq, config.LEVEL_TRIP_CM + 0.5)
+    run(service, config.CONTROL_PERIOD_S)
+
+    assert not service.is_running
+    assert pump_v(daq) == 0.0
+    assert service.regulation_values.tank2_actual_cm >= config.LEVEL_TRIP_CM
+
+
+def test_pump_limit_status_uses_mpc_and_tower_output_bounds() -> None:
+    service = RegulationService(
+        MPCRegulationController(),
+        Tower(MockDAQ(), TowerCalibration(max_pump_v=4.0)),
+    )
+    service.toggle_regulation()
+    service.regulation_values.pump_voltage_v = 1.0
+    assert not service.pump_at_limit
+
+    service.regulation_values.pump_voltage_v = 4.0
+    assert service.pump_at_limit
 
 
 def test_level_observer_warns_before_the_warning_level_is_reached() -> None:

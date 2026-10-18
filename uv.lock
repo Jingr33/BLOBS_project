@@ -82,6 +82,7 @@ name = "blobs-project"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "casadi" },
     { name = "do-mpc" },
     { name = "nidaqmx" },
     { name = "numpy" },
@@ -98,6 +99,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "casadi", specifier = ">=3.6.7,<4" },
     { name = "do-mpc", specifier = ">=5.0,<6" },
     { name = "nidaqmx", specifier = ">=1.6.0" },
     { name = "numpy", specifier = ">=2.5.3" },

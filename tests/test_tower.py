@@ -1,5 +1,6 @@
 """Tests for the ``Tower`` plant interface over ``MockDAQ``."""
 
+import math
 from typing import Any
 
 import pytest
@@ -36,6 +37,20 @@ def test_level_conversion() -> None:
     daq.set_input_voltage("ai0", 3.255)
 
     assert tower.read_level_cm() == pytest.approx(3.0 * config.TOWER_LEVEL_CM_PER_V)
+
+
+def test_negative_measured_level_is_clamped_to_zero() -> None:
+    tower, daq = make_tower()
+    daq.set_input_voltage("ai0", -1.0)
+
+    assert tower.read_level_cm() == 0.0
+
+
+def test_non_finite_level_is_not_hidden_by_lower_bound() -> None:
+    tower, daq = make_tower()
+    daq.set_input_voltage("ai0", float("nan"))
+
+    assert math.isnan(tower.read_level_cm())
 
 
 def test_level_is_measured_from_the_tank_bottom() -> None:

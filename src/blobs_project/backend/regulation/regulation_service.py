@@ -6,7 +6,12 @@ from collections.abc import Sequence
 
 from blobs_project import config
 from blobs_project.backend.dtos import RegulationValues, RunStatistics, Sample
-from blobs_project.backend.hardware import HardwareError, SimulatedDAQ, Tower
+from blobs_project.backend.hardware import (
+    HardwareError,
+    SimulatedDAQ,
+    Tower,
+    TowerCalibration,
+)
 from blobs_project.backend.statistics import StatisticsCalculator
 from blobs_project.backend.timekeeping import Stopwatch
 
@@ -36,7 +41,7 @@ class RegulationService:
         self._safety = SafetyGuard()
         self._sample_log = SampleLog()
         self._stopwatch = Stopwatch(config.PROFILE_SAMPLE_INTERVAL_S)
-        self._tower = tower or Tower(SimulatedDAQ())
+        self._tower = tower or Tower(SimulatedDAQ(), TowerCalibration(offset_cm=0.0))
         self._controller = ctrl or MPCRegulationController(
             PlantParams(u_max=self._tower.max_pump_voltage)
         )
@@ -84,8 +89,17 @@ class RegulationService:
     @property
     def pump_at_limit(self) -> bool:
         """Return whether a running controller output is at its lower or upper limit."""
-        volts = self.regulation_values.pump_voltage_v
-        return self.is_running and self._safety.at_pump_limit(volts)
+        if not self.is_running:
+            return False
+        u = self.regulation_values.pump_voltage_v
+        controller_limits = self._controller.output_limits_v
+        lower_v, upper_v = controller_limits or (
+            0.0,
+            self._tower.max_pump_voltage,
+        )
+        lower_v = max(0.0, lower_v)
+        upper_v = min(self._tower.max_pump_voltage, upper_v)
+        return u <= lower_v + 1e-6 or u >= upper_v - 1e-6
 
     @property
     def overflow_warning(self) -> bool:
@@ -325,7 +339,14 @@ class RegulationService:
     def _control_step(self, dt_s: float) -> None:
         """Read the level, run the controller and drive the pump."""
         try:
-            level_cm = self._level_filter(self._tower.read_level_cm())
+            raw_level_cm = self._tower.read_level_cm()
+            if math.isfinite(raw_level_cm) and raw_level_cm >= config.LEVEL_TRIP_CM:
+                self.regulation_values.tank2_actual_cm = raw_level_cm
+                self._stop_on_fault(
+                    f"level {raw_level_cm:.1f} cm reached {config.LEVEL_TRIP_CM} cm"
+                )
+                return
+            level_cm = self._level_filter(raw_level_cm)
             reason = self._safety.check_level(level_cm)
             if reason is not None:
                 self._stop_on_fault(reason)

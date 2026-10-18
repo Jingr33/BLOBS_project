@@ -215,7 +215,9 @@ def test_service_stops_on_hardware_error() -> None:
 
 def test_service_reports_a_simulated_tower() -> None:
     """The default tower is simulated, a tower on a DAQ card is not."""
-    assert RegulationService().simulated
+    simulated_service = RegulationService()
+    assert simulated_service.simulated
+    assert simulated_service.tower.read_level_cm() == pytest.approx(0.0)
     assert not make_service(_RecordingController(), MockDAQ()).simulated
 
 
