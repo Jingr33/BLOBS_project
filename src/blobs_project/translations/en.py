@@ -43,6 +43,8 @@ STRINGS: Final[dict[str, str]] = {
     "regulation.desired_levels_manual": "Desired levels: manual",
     "regulation.profile_missing": "No CSV profile loaded",
     "regulation.emergency_stop": "EMERGENCY STOP",
+    "regulation.show": "Show regulation",
+    "regulation.hide": "Hide regulation",
     "regulation.fault": "Stopped: {reason}",
     "regulation.overflow_warning": "Warning: lower tank close to overflow",
     "regulation.profile_loaded": "Profile: CSV / {rows} rows / {duration:.0f} s",

@@ -21,6 +21,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._regulation_service = regulation_service
         self._previous_state: tuple[bool, bool] = (False, False)
+        self._regulation_visible = False
         self._action_dispatcher = ActionDispatcher(regulation_service, csv_service)
         self.setWindowTitle(tr("window.title"))
         self.setMinimumSize(config.WINDOW_MINIMUM_WIDTH, config.WINDOW_MINIMUM_HEIGHT)
@@ -36,6 +37,11 @@ class MainWindow(QMainWindow):
         self._footer = FooterFrame()
         self._header.action_requested.connect(self._handle_action_requested)
         self._header.emergency_stop_requested.connect(self._handle_emergency_stop)
+        self._header.regulation_toggle_requested.connect(
+            self._toggle_regulation_frame
+        )
+        self._regulation_frame.setVisible(self._regulation_visible)
+        self._header.set_regulation_visible(self._regulation_visible)
         self._regulation_frame.action_requested.connect(self._handle_action_requested)
         self._regulation_frame.status_changed.connect(self._footer.set_status)
 
@@ -88,6 +94,11 @@ class MainWindow(QMainWindow):
             self._regulation_service.regulation_active,
             self._regulation_service.self_driven_active,
         )
+
+    def _toggle_regulation_frame(self) -> None:
+        self._regulation_visible = not self._regulation_visible
+        self._regulation_frame.setVisible(self._regulation_visible)
+        self._header.set_regulation_visible(self._regulation_visible)
 
     def _refresh_view(self) -> None:
         self._regulation_frame.sync()

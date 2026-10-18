@@ -55,7 +55,7 @@ def test_main_window_composes_separate_frames() -> None:
     app.processEvents()
 
 
-def test_header_offers_available_actions() -> None:
+def test_header_offers_regulation_toggle_and_actions() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
@@ -65,6 +65,7 @@ def test_header_offers_available_actions() -> None:
     labels = [button.text() for button in header.findChildren(QPushButton)]
 
     assert labels == [
+        "Show regulation",
         "Export CSV data",
         "Download CSV template",
         "Tare",
@@ -137,8 +138,14 @@ def test_import_and_automatic_buttons_share_one_row() -> None:
     window = Application.create_window(RegulationService(), CsvService())
     window.show()
     app.processEvents()
+    header = window.findChild(HeaderFrame)
     frame = window.findChild(RegulationFrame)
-    assert frame is not None
+    assert header is not None and frame is not None
+
+    toggle = header.findChild(QPushButton, "regulationToggle")
+    assert toggle is not None
+    toggle.click()
+    app.processEvents()
 
     buttons = {button.text(): button for button in frame.findChildren(QPushButton)}
     import_button = buttons["Import CSV data"]
@@ -146,6 +153,71 @@ def test_import_and_automatic_buttons_share_one_row() -> None:
 
     assert import_button.y() == automatic_button.y()
     assert automatic_button.x() > import_button.x()
+
+    window.close()
+    app.processEvents()
+
+
+def test_regulation_frame_is_hidden_by_default_and_expands() -> None:
+    app = QApplication.instance() or QApplication([])
+
+    window = Application.create_window(RegulationService(), CsvService())
+    window.show()
+    app.processEvents()
+    header = window.findChild(HeaderFrame)
+    frame = window.findChild(RegulationFrame)
+    visualization = window.findChild(VisualizationFrame)
+    assert header is not None and frame is not None and visualization is not None
+
+    toggle = header.findChild(QPushButton, "regulationToggle")
+    assert toggle is not None
+    assert not frame.isVisible()
+    assert toggle.text() == "Show regulation"
+
+    collapsed_width = visualization.width()
+    toggle.click()
+    app.processEvents()
+
+    assert frame.isVisible()
+    assert toggle.text() == "Hide regulation"
+    assert visualization.width() < collapsed_width
+
+    toggle.click()
+    app.processEvents()
+
+    assert not frame.isVisible()
+    assert toggle.text() == "Show regulation"
+    assert visualization.width() == collapsed_width
+
+    window.close()
+    app.processEvents()
+
+
+def test_toggling_regulation_frame_does_not_change_the_run() -> None:
+    app = QApplication.instance() or QApplication([])
+
+    regulation_service = RegulationService()
+    window = Application.create_window(regulation_service, CsvService())
+    window.show()
+    app.processEvents()
+    header = window.findChild(HeaderFrame)
+    frame = window.findChild(RegulationFrame)
+    assert header is not None and frame is not None
+
+    toggle = header.findChild(QPushButton, "regulationToggle")
+    assert toggle is not None
+    regulation = frame.findChildren(QPushButton)[0]
+    regulation.click()
+    assert regulation_service.regulation_active
+
+    toggle.click()
+    app.processEvents()
+    assert regulation_service.regulation_active
+
+    toggle.click()
+    app.processEvents()
+    assert regulation_service.regulation_active
+    assert regulation.text() == "Stop regulation"
 
     window.close()
     app.processEvents()
