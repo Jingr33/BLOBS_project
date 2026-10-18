@@ -142,15 +142,15 @@ class TankDiagram(QWidget):
     @staticmethod
     def _draw_tank_body(painter: QPainter, tank: QRectF) -> None:
         painter.save()
-        painter.setPen(QPen(QColor("#8ba2be"), 2))
-        painter.setBrush(QColor("#182940"))
+        painter.setPen(QPen(QColor(config.TANK_OUTLINE), 2))
+        painter.setBrush(QColor(config.TANK_BODY))
         painter.drawRoundedRect(tank, 12, 12)
         painter.restore()
 
     @staticmethod
     def _draw_missing_sensor(painter: QPainter, tank: QRectF) -> None:
         painter.save()
-        painter.setPen(QPen(QColor(config.MUTED), 1))
+        painter.setPen(QPen(QColor(config.PRIMARY_TEXT), 1))
         painter.drawText(tank, Qt.AlignmentFlag.AlignCenter, tr("diagram.no_sensor"))
         painter.restore()
 
@@ -214,7 +214,7 @@ class TankDiagram(QWidget):
         )
         for tick in config.TANK_SCALE_TICKS:
             tick_y = tank.bottom() - tank.height() * (tick / config.TANK_LEVEL_MAX_CM)
-            painter.setPen(QPen(QColor("#324a67"), 1, Qt.PenStyle.DashLine))
+            painter.setPen(QPen(QColor(config.GRID_DASH), 1, Qt.PenStyle.DashLine))
             painter.drawLine(
                 QPointF(tank.left(), tick_y), QPointF(tank.right(), tick_y)
             )
@@ -232,7 +232,7 @@ class TankDiagram(QWidget):
             config.TANK_PUMP_COLOR if self._pump_power_w > 0.0 else config.MUTED
         )
         painter.setPen(QPen(QColor(pump_color), 2))
-        painter.setBrush(QColor("#173746"))
+        painter.setBrush(QColor(config.PUMP_BODY))
         painter.drawRoundedRect(pump, 8, 8)
         painter.setPen(QPen(QColor(pump_color), 1))
         painter.drawText(pump, Qt.AlignmentFlag.AlignCenter, tr("diagram.pump"))
@@ -264,9 +264,9 @@ class TankDiagram(QWidget):
     ) -> None:
         painter.save()
         painter.setPen(QPen(QColor(pen_color), 1))
-        painter.setBrush(QColor("#17263a"))
+        painter.setBrush(QColor(config.READOUT_BACKGROUND))
         painter.drawRoundedRect(readout, 6, 6)
-        painter.setPen(QColor(config.TEXT))
+        painter.setPen(QColor(config.PRIMARY_TEXT))
         painter.drawText(
             QRectF(readout.left() + 8, readout.top() + 3, readout.width() - 16, 18),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,

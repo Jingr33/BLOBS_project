@@ -9,24 +9,34 @@ TICK_INTERVAL_MS: Final = 100
 CLOCK_INTERVAL_MS: Final = 1000
 
 # application main colors
-BACKGROUND: Final = "#0b1220"
-PANEL: Final = "#111c2e"
-PANEL_BORDER: Final = "#263750"
-TEXT: Final = "#e6edf7"
-MUTED: Final = "#8da0b8"
-CYAN: Final = "#45d7e8"
-GREEN: Final = "#70e1ac"
-ORANGE: Final = "#ffab5c"
-RED: Final = "#ff6d83"
-VIOLET: Final = "#a978ff"
-YELLOW: Final = "#ffd166"
+BACKGROUND: Final = "#d9dcdf"
+PANEL: Final = "#eceef0"
+PANEL_BORDER: Final = "#8a9199"
+TEXT: Final = "#1c1f23"
+MUTED: Final = "#4a4f55"
+CYAN: Final = "#4a5058"  # primary / active elements (slate grey)
+GREEN: Final = "#4a4f55"  # normal state - neutral instead of green
+ORANGE: Final = "#6b7280"  # T2 label, flow series - mid grey
+RED: Final = "#d6001c"  # alarm only
+VIOLET: Final = "#5f6670"  # T1 label - dark grey
+YELLOW: Final = "#b36b00"  # warning (amber), readable on light grey
+ACTUAL_BLUE: Final = "#1f5fa8"  # Actual value
+DESIRED_GREY: Final = "#4d4d4d"  # Desired value in the trend
+SETPOINT_DARK: Final = "#333333"  # Desired line / marker in the tank
+
+READOUT_BACKGROUND: Final = "#17263a"
+GRID: Final = "#29405d"
+GRID_DASH: Final = "#324a67"
+TANK_OUTLINE: Final = "#8ba2be"
+TANK_BODY: Final = "#182940"
+PUMP_BODY: Final = "#173746"
 
 # deatil colors
-BUTTON_BACKGROUND: Final = "#1b2b42"
-BUTTON_BORDER: Final = "#385273"
-BUTTON_HOVER_BACKGROUND: Final = "#263d5a"
-PRIMARY_TEXT: Final = "#07121e"
-DANGER_TEXT: Final = "#1b0b12"
+BUTTON_BACKGROUND: Final = "#f6f7f8"
+BUTTON_BORDER: Final = "#6b7280"
+BUTTON_HOVER_BACKGROUND: Final = "#e2e5e8"
+PRIMARY_TEXT: Final = "#ffffff"  # text on CYAN and on grey labels
+DANGER_TEXT: Final = "#ffffff"  # text on RED
 FONT_FAMILY: Final = "Arial"
 
 # tank diagram parameters
@@ -35,25 +45,28 @@ TANK_MINIMUM_HEIGHT: Final = 360
 TANK_LEVEL_MAX_CM: Final = 30
 TANK_SCALE_TICKS: Final = (0, 10, 20, 30)
 TANK_UPPER_COLOR: Final = VIOLET
-TANK_LOWER_COLOR: Final = "#ff9e5c"
-TANK_FILL_COLOR: Final = "#58c7e5"
-TANK_ACTUAL_MARKER_COLOR: Final = "#ff3ea5"
-TANK_DESIRED_LINE_COLOR: Final = GREEN
+TANK_LOWER_COLOR: Final = ORANGE
+TANK_FILL_COLOR: Final = "#9fb3c8"
+TANK_ACTUAL_MARKER_COLOR: Final = ACTUAL_BLUE
+TANK_DESIRED_LINE_COLOR: Final = SETPOINT_DARK
 TANK_ACTUAL_LEVEL_CM: Final = 17.9
 TANK_DESIRED_LEVEL_CM: Final = 20.0
-TANK_PIPE_COLOR: Final = "#526b88"
-TANK_PUMP_COLOR: Final = CYAN
+TANK_PIPE_COLOR: Final = "#8a9199"
+TANK_PUMP_COLOR: Final = "#4a5058"  # running pump / flow
 
 # trend preview parameters
 TREND_MINIMUM_HEIGHT: Final = 240
 TREND_TIME_WINDOW_S: Final = 120.0
 TREND_X_TICK_S: Final = 30.0
-TREND_ACTUAL_COLOR: Final = CYAN
-TREND_DESIRED_COLOR: Final = RED
+TREND_ACTUAL_COLOR: Final = ACTUAL_BLUE
+TREND_DESIRED_COLOR: Final = DESIRED_GREY
 TREND_FLOW_COLOR: Final = ORANGE
-TREND_POWER_COLOR: Final = VIOLET
+TREND_POWER_COLOR: Final = "#2a7f7f"  # teal, distinct from the grey flow line
 TREND_SERIES: Final = (
-    (CYAN, (0.0, 0.65, 0.2, 0.56, 0.42, 0.48, 0.64, 0.34, 0.82, 0.25, 1.0, 0.30)),
+    (
+        ACTUAL_BLUE,
+        (0.0, 0.65, 0.2, 0.56, 0.42, 0.48, 0.64, 0.34, 0.82, 0.25, 1.0, 0.30),
+    ),
     (ORANGE, (0.0, 0.48, 0.2, 0.49, 0.42, 0.53, 0.64, 0.58, 0.82, 0.52, 1.0, 0.55)),
 )
 
