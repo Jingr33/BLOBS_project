@@ -50,6 +50,7 @@ STRINGS: Final[dict[str, str]] = {
     "regulation.power": "Pump power [W]:",
     "regulation.voltage": "Pump voltage [V]:",
     "regulation.voltage_limit": "{value:.2f} (at limit)",
+    "regulation.voltage_unknown": "Output unknown (last confirmed {value:.2f} V)",
     "regulation.no_sensor": "no sensor",
     "regulation.start_regulation": "Start regulation",
     "regulation.stop_regulation": "Stop regulation",
@@ -62,7 +63,9 @@ STRINGS: Final[dict[str, str]] = {
     "regulation.show": "Show regulation",
     "regulation.hide": "Hide regulation",
     "regulation.fault": "Stopped: {reason}",
-    "regulation.overflow_warning": "Warning: lower tank close to overflow",
+    "regulation.overflow_warning": (
+        "Warning: level is high or projected to reach {level:.1f} cm within 10 s"
+    ),
     "regulation.profile_loaded": "Profile: {rows} × {step:g} min = {total:g} min",
     "regulation.profile_step": "Step {step}/{rows}: {level:.1f} cm",
     "regulation.step_duration": "Step duration [min]:",
