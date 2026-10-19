@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import math
 from dataclasses import dataclass, replace
 
 from blobs_project import config
@@ -31,28 +32,50 @@ class CsvProfile:
         tank2_values: list[float] = []
         skipped_header = False
 
-        rows = csv.reader(text.splitlines())
-        for line_number, row in enumerate(rows, start=1):
-            cells = [cell.strip() for cell in row if cell.strip()]
-            if not cells:
-                continue
-            if not all(cls._is_number(cell) for cell in cells):
-                if not tank2_values and not skipped_header:
-                    skipped_header = True
+        rows = csv.reader(text.splitlines(), strict=True)
+        try:
+            for row in rows:
+                line_number = rows.line_num
+                cells = [cell.strip() for cell in row]
+                if not cells or not any(cells):
                     continue
-                raise CsvError(f"line {line_number}: expected numeric level values")
-            if len(cells) != 1:
-                raise CsvError(f"line {line_number}: expected 1 column")
-            level = float(cells[0])
-            low, high = config.SETPOINT_MIN_CM, config.SETPOINT_MAX_CM
-            if not low <= level <= high:
-                raise CsvError(
-                    f"line {line_number}: level {level} cm is outside {low}-{high} cm"
-                )
-            tank2_values.append(level)
+                if cells[0].startswith("#"):
+                    continue
+                if len(cells) != 1:
+                    raise CsvError(
+                        f"line {line_number}: expected 1 column with one level in cm; "
+                        f"found {len(cells)}"
+                    )
+                cell = cells[0]
+                if not cls._is_number(cell):
+                    if not tank2_values and not skipped_header:
+                        skipped_header = True
+                        continue
+                    raise CsvError(
+                        f"line {line_number}: level {cell!r} is not a number"
+                    )
+                level = float(cell)
+                if not math.isfinite(level):
+                    raise CsvError(
+                        f"line {line_number}: level {cell!r} must be a finite number"
+                    )
+                low, high = config.SETPOINT_MIN_CM, config.SETPOINT_MAX_CM
+                if not low <= level <= high:
+                    raise CsvError(
+                        f"line {line_number}: level {level:g} cm is outside "
+                        f"the allowed range {low:g}-{high:g} cm"
+                    )
+                tank2_values.append(level)
+        except csv.Error as error:
+            raise CsvError(
+                f"line {rows.line_num}: invalid CSV syntax: {error}"
+            ) from error
 
         if not tank2_values:
-            raise CsvError("profile contains no rows")
+            raise CsvError(
+                "profile contains no numeric levels; add one desired level in cm "
+                "per row"
+            )
         return cls(tuple(tank2_values))
 
     def desired_at(self, elapsed_s: float) -> float:

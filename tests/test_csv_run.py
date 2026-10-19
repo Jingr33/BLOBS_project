@@ -32,7 +32,7 @@ def test_exported_run_is_plain_csv() -> None:
 
 
 def test_run_with_a_broken_row_is_rejected() -> None:
-    with pytest.raises(CsvError):
+    with pytest.raises(CsvError, match=r"line 4: expected 6 columns, found 2"):
         RunCsv.from_text(RunCsv.to_text(SAMPLES) + "3.0,10.00\n")
 
 
@@ -114,10 +114,26 @@ def test_run_is_told_from_a_profile() -> None:
 
 
 def test_run_without_all_columns_is_rejected() -> None:
-    with pytest.raises(CsvError):
+    with pytest.raises(
+        CsvError, match="recorded run header is missing required column"
+    ):
         RunCsv.from_text("time_s,actual_cm\n1.0,9.5\n")
 
 
 def test_run_without_samples_is_rejected() -> None:
     with pytest.raises(CsvError):
         RunCsv.from_text(RunCsv.to_text(()))
+
+
+def test_run_with_non_numeric_field_reports_column_and_line() -> None:
+    text = RunCsv.to_text(SAMPLES).replace("1.0,10.00", "one,10.00")
+
+    with pytest.raises(CsvError, match=r"line 2: time_s value 'one' is not a number"):
+        RunCsv.from_text(text)
+
+
+def test_run_with_non_finite_field_is_rejected() -> None:
+    text = RunCsv.to_text(SAMPLES).replace("1.0,10.00", "nan,10.00")
+
+    with pytest.raises(CsvError, match=r"line 2: time_s value 'nan' must be finite"):
+        RunCsv.from_text(text)

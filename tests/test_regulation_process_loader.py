@@ -42,8 +42,33 @@ def test_csv_profile_rejects_two_columns(tmp_path: Path) -> None:
 
 
 def test_csv_profile_rejects_non_numeric_rows() -> None:
-    with pytest.raises(CsvError):
+    with pytest.raises(CsvError, match=r"line 2: level 'not-a-number' is not a number"):
         CsvProfile.from_text("10.0\nnot-a-number\n")
+
+
+def test_csv_profile_comments_and_blank_rows_are_ignored() -> None:
+    profile = CsvProfile.from_text(
+        "# profile levels\n\n# one level per row\nhladina_cm\n10\n12.5\n"
+    )
+
+    assert profile.tank2_levels == (10.0, 12.5)
+
+
+def test_csv_profile_reports_non_finite_levels() -> None:
+    with pytest.raises(CsvError, match=r"line 2: level 'nan' must be a finite number"):
+        CsvProfile.from_text("hladina_cm\nnan\n")
+
+
+def test_csv_profile_reports_out_of_range_levels() -> None:
+    with pytest.raises(
+        CsvError, match=r"line 2: level 25 cm is outside the allowed range"
+    ):
+        CsvProfile.from_text("hladina_cm\n25\n")
+
+
+def test_csv_profile_reports_extra_columns() -> None:
+    with pytest.raises(CsvError, match=r"line 1: expected 1 column.*found 2"):
+        CsvProfile.from_text("10,11\n")
 
 
 def test_csv_profile_rejects_file_without_rows() -> None:

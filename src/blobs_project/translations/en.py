@@ -20,7 +20,7 @@ STRINGS: Final[dict[str, str]] = {
     "status.history_loaded": "Recorded run loaded ({minutes:.1f} min)",
     "status.history_running": "Stop the regulation before loading a recorded run",
     "status.profile_required": "Import a profile before automatic regulation",
-    "status.profile_invalid": "CSV file could not be read",
+    "status.profile_invalid": "CSV import failed: {reason}",
     "status.export_ready": "CSV data and statistics exported",
     "status.export_missing": "No samples to export yet",
     "status.export_failed": "CSV data could not be written",
