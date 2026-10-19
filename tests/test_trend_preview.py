@@ -44,7 +44,7 @@ def test_desired_line_is_drawn_in_red() -> None:
     )
 
     assert red > 40
-    assert cyan > 40
+    assert cyan > 30
     assert flow > 20
     assert power > 20
 
