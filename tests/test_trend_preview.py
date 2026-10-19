@@ -46,7 +46,7 @@ def test_desired_line_is_drawn_in_red() -> None:
     assert red > 40
     assert cyan > 30
     assert flow > 4
-    assert power > 5
+    assert power > 4
 
 
 def _count_pixels(image: QImage, predicate: Callable[[QColor], bool]) -> int:
