@@ -46,6 +46,8 @@ TANK_PUMP_COLOR: Final = CYAN
 
 # trend preview parameters
 TREND_MINIMUM_HEIGHT: Final = 240
+# smaller preview of the same chart shown on the Overview tab
+OVERVIEW_TREND_MINIMUM_HEIGHT: Final = 200
 TREND_TIME_WINDOW_S: Final = 120.0
 TREND_X_TICK_S: Final = 30.0
 TREND_ACTUAL_COLOR: Final = CYAN
@@ -80,6 +82,8 @@ TOWER_LEVEL_OFFSET_CM: Final = 1.54
 # Pump cap; above it the upper tank overflows.
 TOWER_PUMP_MAX_V: Final = 7.5
 SAMPLE_LOG_LIMIT: Final = 5000
+# events kept in the Alerts tab log
+EVENT_LOG_LIMIT: Final = 500
 
 # regulation loop
 # Controller and measurement period [s].

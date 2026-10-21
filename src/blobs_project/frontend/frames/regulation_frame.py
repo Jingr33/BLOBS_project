@@ -6,7 +6,6 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QDoubleSpinBox,
     QFrame,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -19,7 +18,6 @@ from blobs_project.backend.regulation import (
     ProfileRequiredError,
     RegulationService,
 )
-from blobs_project.frontend.actions import ActionId, ActionPlace, visible_actions
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.frontend.widgets.tank_control import TankControl
 from blobs_project.translations import tr
@@ -46,7 +44,6 @@ class RegulationFrame(QFrame):
         layout.addWidget(
             QtHelper.make_label(tr("regulation.section_title"), "sectionTitle")
         )
-        layout.addLayout(self._build_pump_grid())
         layout.addWidget(self._tank2_control)
         layout.addWidget(self._build_mode_label())
         layout.addSpacing(6)
@@ -58,7 +55,7 @@ class RegulationFrame(QFrame):
         self._automatic_button = self._build_button(
             tr("regulation.start_automatic"), "primary", self._toggle_automatic
         )
-        layout.addLayout(self._build_action_row())
+        layout.addWidget(self._automatic_button)
         layout.addLayout(self._build_step_row())
         self._profile_label = QtHelper.make_label(
             tr("regulation.profile_missing"), "profile"
@@ -73,18 +70,6 @@ class RegulationFrame(QFrame):
 
     def _set_desired_level(self, value_cm: float) -> None:
         self._regulation_service.regulation_values.tank2_desired_cm = value_cm
-
-    def _build_action_row(self) -> QHBoxLayout:
-        row = QHBoxLayout()
-        row.setSpacing(8)
-        if ActionId.IMPORT_CSV in visible_actions(ActionPlace.REGULATION):
-            import_button = QPushButton(tr("action.import_csv"))
-            import_button.clicked.connect(
-                lambda _checked=False: self.action_requested.emit(ActionId.IMPORT_CSV)
-            )
-            row.addWidget(import_button, 1)
-        row.addWidget(self._automatic_button, 2)
-        return row
 
     def _build_step_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
@@ -101,30 +86,15 @@ class RegulationFrame(QFrame):
         row.addWidget(self._step_spin)
         return row
 
-    def _build_pump_grid(self) -> QGridLayout:
-        grid = QGridLayout()
-        grid.setVerticalSpacing(8)
-        grid.setHorizontalSpacing(12)
-        self._power_label = QtHelper.add_metric_row(grid, 0, tr("regulation.power"))
-        self._voltage_label = QtHelper.add_metric_row(grid, 1, tr("regulation.voltage"))
-        grid.setColumnStretch(1, 1)
-        return grid
-
     def sync(self) -> None:
         regulation_service = self._regulation_service
         self._tank2_control.set_values(
-            regulation_service.regulation_values.tank2_actual_cm,
             regulation_service.regulation_values.tank2_desired_cm,
             regulation_service.tank2_deviation_percent,
         )
         self._tank2_control.set_desired_editable(
             not regulation_service.self_driven_active
         )
-        self._tank2_control.set_flow(regulation_service.regulation_values.flow_l_min)
-        self._power_label.setText(
-            f"{regulation_service.regulation_values.pump_power_w:.2f}"
-        )
-        self._set_voltage_label()
 
         mode_key = (
             "regulation.desired_levels_profile"
@@ -156,15 +126,6 @@ class RegulationFrame(QFrame):
             self._step_spin.blockSignals(False)
         self._set_profile_label(regulation_service.profile)
         self._set_alert_label()
-
-    def _set_voltage_label(self) -> None:
-        volts = self._regulation_service.regulation_values.pump_voltage_v
-        if self._regulation_service.pump_at_limit:
-            self._voltage_label.setText(tr("regulation.voltage_limit", value=volts))
-            self._voltage_label.setStyleSheet(f"color: {config.ORANGE};")
-        else:
-            self._voltage_label.setText(f"{volts:.2f}")
-            self._voltage_label.setStyleSheet("")
 
     def _set_alert_label(self) -> None:
         fault = self._regulation_service.fault
@@ -218,7 +179,7 @@ class RegulationFrame(QFrame):
         button: QPushButton, active: bool, start_key: str, stop_key: str
     ) -> None:
         button.setText(tr(stop_key if active else start_key))
-        QtHelper.set_style_name(button, "danger" if active else "primary")
+        QtHelper.set_style_name(button, "running" if active else "primary")
 
     def _build_mode_label(self) -> QLabel:
         self._mode_label = QtHelper.make_label(

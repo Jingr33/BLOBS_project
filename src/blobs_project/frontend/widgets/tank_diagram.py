@@ -92,7 +92,7 @@ class TankDiagram(QWidget):
         arrow_color = QColor(config.TANK_PIPE_COLOR)
         self._draw_arrow(painter, QPointF(center_x, geometry.tank1.top()), arrow_color)
         self._draw_arrow(painter, QPointF(center_x, geometry.tank2.top()), arrow_color)
-        flow_color = config.TANK_PUMP_COLOR if self._flow_l_min > 0.0 else config.MUTED
+        flow_color = config.GREEN if self._flow_l_min > 0.0 else config.MUTED
         self._draw_horizontal_arrow(
             painter,
             geometry.pump.right() + 8,
@@ -228,9 +228,7 @@ class TankDiagram(QWidget):
 
     def _draw_pump(self, painter: QPainter, pump: QRectF) -> None:
         painter.save()
-        pump_color = (
-            config.TANK_PUMP_COLOR if self._pump_power_w > 0.0 else config.MUTED
-        )
+        pump_color = config.GREEN if self._pump_power_w > 0.0 else config.MUTED
         painter.setPen(QPen(QColor(pump_color), 2))
         painter.setBrush(QColor("#173746"))
         painter.drawRoundedRect(pump, 8, 8)
@@ -249,7 +247,7 @@ class TankDiagram(QWidget):
         )
 
     def _draw_flow_readout(self, painter: QPainter, tank: QRectF) -> None:
-        flow_color = config.TANK_PUMP_COLOR if self._flow_l_min > 0.0 else config.MUTED
+        flow_color = config.GREEN if self._flow_l_min > 0.0 else config.MUTED
         readout = QRectF(tank.right() + PILL_GAP, tank.bottom() - 26, 150, 26)
         self._draw_readout(
             painter,

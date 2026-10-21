@@ -11,27 +11,27 @@ def test_every_action_is_registered() -> None:
     assert set(HEADER_ACTIONS) == set(ActionId)
 
 
-def test_header_offers_export_csv_before_other_actions() -> None:
-    assert list(visible_actions(ActionPlace.HEADER)) == [
+def test_header_offers_only_the_sensor_tare() -> None:
+    assert list(visible_actions(ActionPlace.HEADER)) == [ActionId.TARE]
+
+
+def test_settings_offer_csv_management() -> None:
+    assert list(visible_actions(ActionPlace.SETTINGS)) == [
         ActionId.EXPORT_CSV,
+        ActionId.IMPORT_CSV,
         ActionId.DOWNLOAD_CSV_TEMPLATE,
-        ActionId.TARE,
     ]
 
 
-def test_regulation_place_offers_only_import_csv() -> None:
-    assert list(visible_actions(ActionPlace.REGULATION)) == [ActionId.IMPORT_CSV]
-
-
 def test_disabled_action_is_hidden_from_users() -> None:
-    original = HEADER_ACTIONS[ActionId.IMPORT_CSV]
+    original = HEADER_ACTIONS[ActionId.EXPORT_CSV]
     try:
-        HEADER_ACTIONS[ActionId.IMPORT_CSV] = HeaderAction(
-            (ActionPlace.REGULATION,), enabled=False
+        HEADER_ACTIONS[ActionId.EXPORT_CSV] = HeaderAction(
+            (ActionPlace.SETTINGS,), enabled=False
         )
 
-        assert ActionId.IMPORT_CSV not in visible_actions(ActionPlace.REGULATION)
+        assert ActionId.EXPORT_CSV not in visible_actions(ActionPlace.SETTINGS)
     finally:
-        HEADER_ACTIONS[ActionId.IMPORT_CSV] = original
+        HEADER_ACTIONS[ActionId.EXPORT_CSV] = original
 
-    assert ActionId.IMPORT_CSV in visible_actions(ActionPlace.REGULATION)
+    assert ActionId.EXPORT_CSV in visible_actions(ActionPlace.SETTINGS)

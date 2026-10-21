@@ -1,7 +1,7 @@
 from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QColor, QFont, QFontMetricsF, QPainter
 
-from blobs_project.config import PRIMARY_TEXT, YELLOW
+from blobs_project.config import PRIMARY_TEXT, TEXT
 from blobs_project.translations import tr
 
 PILL_TEXT_PADDING: float = 26.0
@@ -24,7 +24,7 @@ class PaintHelper:
         rect = QRectF(x, y, width, pill_height)
         painter.save()
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(YELLOW))
+        painter.setBrush(QColor(TEXT))
         painter.drawRoundedRect(rect, pill_height / 2, pill_height / 2)
         painter.setFont(font)
         painter.setPen(QColor(PRIMARY_TEXT))

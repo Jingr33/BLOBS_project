@@ -1,8 +1,9 @@
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
 from blobs_project import config
 from blobs_project.backend.csv_management import CsvService
+from blobs_project.backend.events import EventLog, EventSeverity
 from blobs_project.backend.regulation import RegulationService
 from blobs_project.translations import tr
 
@@ -13,6 +14,8 @@ from .frames.regulation_frame import RegulationFrame
 from .frames.visualization_frame import VisualizationFrame
 from .style import STYLE_SHEET
 
+RunState = tuple[bool, bool, str | None, bool]
+
 
 class MainWindow(QMainWindow):
     def __init__(
@@ -20,8 +23,8 @@ class MainWindow(QMainWindow):
     ) -> None:
         super().__init__()
         self._regulation_service = regulation_service
-        self._previous_state: tuple[bool, bool] = (False, False)
-        self._regulation_visible = False
+        self._previous_state: RunState = (False, False, None, False)
+        self._event_log = EventLog()
         self._action_dispatcher = ActionDispatcher(regulation_service, csv_service)
         self.setWindowTitle(tr("window.title"))
         self.setMinimumSize(config.WINDOW_MINIMUM_WIDTH, config.WINDOW_MINIMUM_HEIGHT)
@@ -33,13 +36,11 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         self._header = HeaderFrame()
         self._regulation_frame = RegulationFrame(self._regulation_service)
-        self._visualization = VisualizationFrame()
+        self._visualization = VisualizationFrame(self._regulation_frame)
         self._footer = FooterFrame()
         self._header.action_requested.connect(self._handle_action_requested)
         self._header.emergency_stop_requested.connect(self._handle_emergency_stop)
-        self._header.regulation_toggle_requested.connect(self._toggle_regulation_frame)
-        self._regulation_frame.setVisible(self._regulation_visible)
-        self._header.set_regulation_visible(self._regulation_visible)
+        self._visualization.action_requested.connect(self._handle_action_requested)
         self._regulation_frame.action_requested.connect(self._handle_action_requested)
         self._regulation_frame.status_changed.connect(self._footer.set_status)
 
@@ -48,18 +49,11 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(24, 20, 24, 18)
         layout.setSpacing(16)
         layout.addWidget(self._header)
-        layout.addLayout(self._build_content(), 1)
+        layout.addWidget(self._visualization, 1)
         layout.addWidget(self._footer)
         self._footer.set_connection(self._regulation_service.simulated)
         self.setCentralWidget(root)
         self._refresh_view()
-
-    def _build_content(self) -> QHBoxLayout:
-        content = QHBoxLayout()
-        content.setSpacing(16)
-        content.addWidget(self._regulation_frame, 1)
-        content.addWidget(self._visualization, 3)
-        return content
 
     def _start_timer(self) -> None:
         self._timer = QTimer(self)
@@ -77,26 +71,15 @@ class MainWindow(QMainWindow):
         if message is not None:
             self._footer.set_status(message)
         self._refresh_view()
-        self._previous_state = (
-            self._regulation_service.regulation_active,
-            self._regulation_service.self_driven_active,
-        )
+        self._previous_state = self._current_state()
 
     def _handle_emergency_stop(self) -> None:
         self._regulation_service.emergency_stop()
-        self._refresh_view()
+        self._report_state_changes()
         fault = self._regulation_service.fault
         if fault is not None:
             self._footer.set_status(tr("status.fault", reason=fault), alert=True)
-        self._previous_state = (
-            self._regulation_service.regulation_active,
-            self._regulation_service.self_driven_active,
-        )
-
-    def _toggle_regulation_frame(self) -> None:
-        self._regulation_visible = not self._regulation_visible
-        self._regulation_frame.setVisible(self._regulation_visible)
-        self._header.set_regulation_visible(self._regulation_visible)
+        self._refresh_view()
 
     def _refresh_view(self) -> None:
         self._regulation_frame.sync()
@@ -122,29 +105,70 @@ class MainWindow(QMainWindow):
         )
         self._footer.set_remaining_time(self._regulation_service.remaining_s)
         self._visualization.update_statistics(self._regulation_service.statistics)
+        self._visualization.update_alert_entries(self._event_log.entries)
+
+    def _current_state(self) -> RunState:
+        regulation_service = self._regulation_service
+        return (
+            regulation_service.regulation_active,
+            regulation_service.self_driven_active,
+            regulation_service.fault,
+            regulation_service.overflow_warning,
+        )
 
     def _report_state_changes(self) -> None:
-        current = (
-            self._regulation_service.regulation_active,
-            self._regulation_service.self_driven_active,
-        )
+        current = self._current_state()
         previous = self._previous_state
         self._previous_state = current
         if current == previous:
             return
-        fault = self._regulation_service.fault
-        if any(previous) and not any(current) and fault is not None:
+        self._log_events(current, previous)
+        self._report_footer_status(current, previous)
+
+    def _log_events(self, current: RunState, previous: RunState) -> None:
+        regulation, automatic, fault, overflow = current
+        was_regulation, was_automatic, was_fault, was_overflow = previous
+        if fault is not None and fault != was_fault:
+            self._event_log.append(
+                EventSeverity.FAULT, tr("status.fault", reason=fault)
+            )
+        if overflow and not was_overflow:
+            self._event_log.append(
+                EventSeverity.WARNING, tr("regulation.overflow_warning")
+            )
+        if automatic and not was_automatic:
+            self._event_log.append(EventSeverity.INFO, tr("status.automatic_running"))
+        elif was_automatic and not automatic:
+            key = (
+                "status.profile_finished"
+                if self._regulation_service.profile_finished
+                else "status.automatic_stopped"
+            )
+            self._event_log.append(EventSeverity.INFO, tr(key))
+        if regulation and not was_regulation:
+            self._event_log.append(EventSeverity.INFO, tr("status.regulation_running"))
+        elif was_regulation and not regulation and not automatic:
+            self._event_log.append(EventSeverity.INFO, tr("status.regulation_stopped"))
+
+    def _report_footer_status(self, current: RunState, previous: RunState) -> None:
+        regulation, automatic, fault, _overflow = current
+        was_regulation, was_automatic, _was_fault, _was_overflow = previous
+        if (
+            any((was_regulation, was_automatic))
+            and not any((regulation, automatic))
+            and fault is not None
+        ):
             self._footer.set_status(tr("status.fault", reason=fault), alert=True)
-        elif previous[1] and not current[1]:
+        elif was_automatic and not automatic:
             key = (
                 "status.profile_finished"
                 if self._regulation_service.profile_finished
                 else "status.automatic_stopped"
             )
             self._footer.set_status(tr(key))
-        elif current[1] and not previous[1]:
+        elif automatic and not was_automatic:
             self._footer.set_status(tr("status.automatic_running"))
-        elif previous[0] and not current[0]:
+        elif was_regulation and not regulation:
             self._footer.set_status(tr("status.regulation_stopped"))
-        elif current[0] and not previous[0]:
+        elif regulation and not was_regulation:
             self._footer.set_status(tr("status.regulation_running"))

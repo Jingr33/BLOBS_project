@@ -55,6 +55,7 @@ STYLE_SHEET = f"""
     QLabel#title {{ font-size: 35px; font-weight: 700; }}
     QLabel#muted {{ color: {config.MUTED}; }}
     QLabel#profile {{ color: {config.MUTED}; font-size: 15px; }}
+    QLabel#metricValue {{ font-size: 22px; font-weight: 700; }}
     QLabel#clockTime {{
         color: {config.CYAN};
         font-size: 24px;
@@ -86,9 +87,16 @@ STYLE_SHEET = f"""
         font-weight: 700;
         border: 0;
     }}
+    QPushButton#running {{
+        background: {config.GREEN};
+        color: {config.PRIMARY_TEXT};
+        font-weight: 700;
+        border: 0;
+    }}
     QPushButton:disabled,
     QPushButton#primary:disabled,
-    QPushButton#danger:disabled {{
+    QPushButton#danger:disabled,
+    QPushButton#running:disabled {{
         background: {config.PANEL};
         border: 1px solid {config.PANEL_BORDER};
         color: {config.MUTED};
