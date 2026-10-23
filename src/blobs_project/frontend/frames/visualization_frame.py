@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QPushButton,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -16,7 +17,6 @@ from blobs_project.backend.events import EventEntry
 from blobs_project.frontend.actions import ActionId, ActionPlace, visible_actions
 from blobs_project.frontend.helpers.qt_helper import QtHelper
 from blobs_project.frontend.widgets.alert_log_view import AlertLogView
-from blobs_project.frontend.widgets.metrics_strip import MetricsStrip
 from blobs_project.frontend.widgets.statistics_view import StatisticsView
 from blobs_project.frontend.widgets.tank_diagram import TankDiagram
 from blobs_project.frontend.widgets.trend_preview import TrendPreview
@@ -27,7 +27,6 @@ NAV_PAGES = (
     "nav.chart",
     "nav.statistics",
     "nav.alerts",
-    "nav.regulation",
     "nav.settings",
 )
 
@@ -35,19 +34,22 @@ NAV_PAGES = (
 class VisualizationFrame(QFrame):
     action_requested = pyqtSignal(object)
 
-    def __init__(self, regulation_frame: QWidget) -> None:
+    def __init__(self, regulation_frame: QWidget, automatic_controls: QWidget) -> None:
         super().__init__()
         self.setObjectName("panel")
         self._stack = QStackedWidget()
         self._nav_buttons: list[QPushButton] = []
-        self._metrics_strip = MetricsStrip()
         self._tank_diagram = TankDiagram()
-        self._overview_trend = TrendPreview()
+        self._overview_trend = TrendPreview(show_energy=False)
         self._overview_trend.setMinimumHeight(config.OVERVIEW_TREND_MINIMUM_HEIGHT)
+        self._overview_trend.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
         self._trend_preview = TrendPreview()
         self._statistics_view = StatisticsView()
         self._alert_log_view = AlertLogView()
         self._regulation_frame = regulation_frame
+        self._automatic_controls = automatic_controls
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -60,14 +62,12 @@ class VisualizationFrame(QFrame):
         self._add_page(self._trend_preview)
         self._add_page(self._statistics_view)
         self._add_page(self._alert_log_view)
-        self._add_page(self._build_regulation_page())
         self._add_page(self._build_settings_page())
         self._select_page(0)
 
     def update_process_data(self, regulation_values: RegulationValues) -> None:
-        self._metrics_strip.set_process_data(regulation_values)
         self._tank_diagram.set_process_data(regulation_values)
-        self._overview_trend.set_total_energy(regulation_values.total_energy_wh)
+        self._trend_preview.set_total_energy(regulation_values.total_energy_wh)
 
     def update_statistics(self, statistics: RunStatistics) -> None:
         self._statistics_view.set_statistics(statistics)
@@ -92,21 +92,12 @@ class VisualizationFrame(QFrame):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
-        layout.addWidget(self._metrics_strip)
+        layout.addWidget(self._regulation_frame)
         diagrams = QHBoxLayout()
         diagrams.setSpacing(12)
         diagrams.addWidget(self._tank_diagram, 3)
-        diagrams.addWidget(self._overview_trend, 2)
+        diagrams.addWidget(self._overview_trend, 3)
         layout.addLayout(diagrams, 1)
-        return page
-
-    def _build_regulation_page(self) -> QWidget:
-        page = QWidget()
-        layout = QHBoxLayout(page)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self._regulation_frame.setMaximumWidth(480)
-        layout.addWidget(self._regulation_frame)
-        layout.addStretch()
         return page
 
     def _build_settings_page(self) -> QWidget:
@@ -117,6 +108,7 @@ class VisualizationFrame(QFrame):
         layout.addWidget(
             QtHelper.make_label(tr("settings.section_title"), "sectionTitle")
         )
+        layout.addWidget(self._automatic_controls)
         buttons_row = QHBoxLayout()
         buttons_row.setSpacing(8)
         for action_id in visible_actions(ActionPlace.SETTINGS):

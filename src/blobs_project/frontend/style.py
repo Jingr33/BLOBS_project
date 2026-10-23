@@ -54,8 +54,8 @@ STYLE_SHEET = f"""
     }}
     QLabel#title {{ font-size: 35px; font-weight: 700; }}
     QLabel#muted {{ color: {config.MUTED}; }}
+    QLabel#mode {{ color: {config.MUTED}; }}
     QLabel#profile {{ color: {config.MUTED}; font-size: 15px; }}
-    QLabel#metricValue {{ font-size: 22px; font-weight: 700; }}
     QLabel#clockTime {{
         color: {config.CYAN};
         font-size: 24px;

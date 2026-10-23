@@ -6,6 +6,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PyQt6.QtGui import QColor, QImage
 from PyQt6.QtWidgets import QApplication
 
+from blobs_project import config
 from blobs_project.frontend.widgets.trend_preview import TrendPreview
 
 # The application must outlive every standalone widget created in these tests.
@@ -47,6 +48,30 @@ def test_desired_line_is_drawn_in_red() -> None:
     assert cyan > 50
     assert flow > 20
     assert power > 20
+
+
+def test_energy_pill_is_only_painted_when_enabled() -> None:
+    assert _energy_pixels(show_energy=True) > 50
+    assert _energy_pixels(show_energy=False) == 0
+
+
+def _energy_pixels(show_energy: bool) -> int:
+    """Count pixels of the energy pill background colour in the render."""
+    preview = TrendPreview(show_energy=show_energy)
+    preview.resize(500, 300)
+    preview.set_total_energy(12.5)
+    preview.show()
+    _APP.processEvents()
+
+    pill_color = QColor(config.TEXT)
+    image = preview.grab().toImage()
+    count = 0
+    for x in range(image.width()):
+        for y in range(image.height()):
+            if image.pixelColor(x, y) == pill_color:
+                count += 1
+    preview.close()
+    return count
 
 
 def _count_pixels(image: QImage, predicate: Callable[[QColor], bool]) -> int:

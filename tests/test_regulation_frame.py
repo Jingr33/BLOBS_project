@@ -19,85 +19,61 @@ def _frame(regulation_service: RegulationService) -> RegulationFrame:
     return frame
 
 
-def _buttons(frame: RegulationFrame) -> tuple[QPushButton, QPushButton]:
-    buttons = frame.findChildren(QPushButton)
-    return buttons[0], buttons[1]
+def _regulation_button(frame: RegulationFrame) -> QPushButton:
+    button = frame.findChild(QPushButton)
+    assert button is not None
+    return button
 
 
-def _profile_label(frame: RegulationFrame) -> QLabel:
-    label = frame.findChild(QLabel, "profile")
+def _mode_label(frame: RegulationFrame) -> QLabel:
+    label = frame.findChild(QLabel, "mode")
     assert label is not None
     return label
 
 
-def test_automatic_button_waits_for_a_loaded_profile(tmp_path: Path) -> None:
+def test_start_button_toggles_the_manual_regulation() -> None:
     regulation_service = RegulationService()
     frame = _frame(regulation_service)
-    regulation, automatic = _buttons(frame)
+    button = _regulation_button(frame)
 
-    assert not automatic.isEnabled()
-    assert _profile_label(frame).text() == "No CSV profile loaded"
-    assert regulation.isEnabled()
+    assert button.text() == "Start regulation"
+    assert button.objectName() == "primary"
 
-    path = tmp_path / "profile.csv"
-    path.write_text("20.0\n21.0\n", encoding="utf-8")
-    regulation_service.set_profile(ProfileLoader.load_profile(path))
-    frame.sync()
-
-    assert automatic.isEnabled()
-    assert _profile_label(frame).text() == "Profile: 2 × 5 min = 10 min"
-
-
-def test_automatic_is_disabled_without_a_profile() -> None:
-    regulation_service = RegulationService()
-    frame = _frame(regulation_service)
-    _, automatic = _buttons(frame)
-
-    assert not automatic.isEnabled()
-
-    automatic.click()
-    assert not regulation_service.self_driven_active
-
-
-def test_starting_regulation_disables_automatic_button(tmp_path: Path) -> None:
-    regulation_service = RegulationService()
-    frame = _frame(regulation_service)
-    regulation, automatic = _buttons(frame)
-    path = tmp_path / "profile.csv"
-    path.write_text("20.0\n", encoding="utf-8")
-    regulation_service.set_profile(ProfileLoader.load_profile(path))
-    frame.sync()
-
-    regulation.click()
-
+    button.click()
     assert regulation_service.regulation_active
-    assert regulation.text() == "Stop regulation"
-    assert not automatic.isEnabled()
+    assert button.text() == "Stop regulation"
+    assert button.objectName() == "running"
 
-    regulation.click()
-
+    button.click()
     assert not regulation_service.regulation_active
-    assert regulation.text() == "Start regulation"
-    assert automatic.isEnabled()
+    assert button.text() == "Start regulation"
+    assert button.objectName() == "primary"
 
 
-def test_starting_automatic_disables_regulation_button(tmp_path: Path) -> None:
+def test_mode_label_reports_the_desired_level_source(tmp_path: Path) -> None:
     regulation_service = RegulationService()
     frame = _frame(regulation_service)
-    regulation, automatic = _buttons(frame)
+
+    assert _mode_label(frame).text() == "Desired levels: manual"
+
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n", encoding="utf-8")
     regulation_service.set_profile(ProfileLoader.load_profile(path))
+    regulation_service.toggle_self_driven()
     frame.sync()
 
-    automatic.click()
+    assert _mode_label(frame).text() == "Desired levels: profile"
+    assert not _regulation_button(frame).isEnabled()
 
-    assert regulation_service.self_driven_active
-    assert automatic.text() == "Stop automatic regulation"
-    assert not regulation.isEnabled()
 
-    automatic.click()
+def test_fault_shows_as_an_alert_on_the_overview_strip() -> None:
+    regulation_service = RegulationService()
+    frame = _frame(regulation_service)
+    alert = frame.findChild(QLabel, "alert")
+    assert alert is not None and alert.isHidden()
 
-    assert not regulation_service.self_driven_active
-    assert automatic.text() == "Start automatic regulation"
-    assert regulation.isEnabled()
+    regulation_service.emergency_stop()
+    frame.sync()
+
+    assert not alert.isHidden()
+    assert alert.text() == "Stopped: emergency stop"

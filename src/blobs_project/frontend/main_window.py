@@ -13,6 +13,7 @@ from .frames.header_frame import HeaderFrame
 from .frames.regulation_frame import RegulationFrame
 from .frames.visualization_frame import VisualizationFrame
 from .style import STYLE_SHEET
+from .widgets.automatic_controls import AutomaticControls
 
 RunState = tuple[bool, bool, str | None, bool]
 
@@ -36,13 +37,15 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         self._header = HeaderFrame()
         self._regulation_frame = RegulationFrame(self._regulation_service)
-        self._visualization = VisualizationFrame(self._regulation_frame)
+        self._automatic_controls = AutomaticControls(self._regulation_service)
+        self._visualization = VisualizationFrame(
+            self._regulation_frame, self._automatic_controls
+        )
         self._footer = FooterFrame()
         self._header.action_requested.connect(self._handle_action_requested)
         self._header.emergency_stop_requested.connect(self._handle_emergency_stop)
         self._visualization.action_requested.connect(self._handle_action_requested)
-        self._regulation_frame.action_requested.connect(self._handle_action_requested)
-        self._regulation_frame.status_changed.connect(self._footer.set_status)
+        self._automatic_controls.status_changed.connect(self._footer.set_status)
 
         root = QWidget()
         layout = QVBoxLayout(root)
@@ -83,6 +86,7 @@ class MainWindow(QMainWindow):
 
     def _refresh_view(self) -> None:
         self._regulation_frame.sync()
+        self._automatic_controls.sync()
         self._visualization.update_process_data(
             self._regulation_service.regulation_values
         )
