@@ -18,6 +18,10 @@ CYAN: Final = "#4a5058"  # primary / active elements (slate grey)
 GREEN: Final = "#4a4f55"  # normal state - neutral instead of green
 ORANGE: Final = "#6b7280"  # T2 label, flow series - mid grey
 RED: Final = "#d6001c"  # alarm only
+# state colours reserved for semantic states (green = ok/running, orange = warning)
+STATE_OK: Final = "#1e7a3d"  # running / within limits
+STATE_WARNING: Final = "#b35c00"  # warning / out of limits
+STATE_ALARM: Final = RED  # emergency / fault
 VIOLET: Final = "#5f6670"  # T1 label - dark grey
 YELLOW: Final = "#b36b00"  # warning (amber), readable on light grey
 ACTUAL_BLUE: Final = "#1f5fa8"  # Actual value

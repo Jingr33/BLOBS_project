@@ -67,7 +67,7 @@ class TankControl(QFrame):
 
         within_limits = abs(deviation_percent) <= config.DEVIATION_OK_PERCENT
         arrow = "▲" if deviation_percent >= 0 else "▼"
-        color = config.GREEN if within_limits else config.ORANGE
+        color = config.STATE_OK if within_limits else config.STATE_WARNING
         self._deviation_label.setText(f"{arrow} {deviation_percent:+.1f} %")
         self._deviation_label.setStyleSheet(f"color: {color}; font-weight: 700;")
 

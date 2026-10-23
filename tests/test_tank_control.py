@@ -45,7 +45,7 @@ def test_deviation_within_tolerance_is_green() -> None:
 
     deviation = control.findChild(QLabel, "deviation")
     assert deviation is not None
-    assert config.GREEN in deviation.styleSheet()
+    assert config.STATE_OK in deviation.styleSheet()
 
 
 def test_deviation_beyond_tolerance_is_warning_orange_not_red() -> None:
@@ -55,5 +55,5 @@ def test_deviation_beyond_tolerance_is_warning_orange_not_red() -> None:
 
     deviation = control.findChild(QLabel, "deviation")
     assert deviation is not None
-    assert config.ORANGE in deviation.styleSheet()
-    assert config.RED not in deviation.styleSheet()
+    assert config.STATE_WARNING in deviation.styleSheet()
+    assert config.STATE_ALARM not in deviation.styleSheet()

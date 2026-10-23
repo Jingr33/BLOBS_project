@@ -17,8 +17,8 @@ from blobs_project.translations import tr
 
 SEVERITY_COLORS: dict[EventSeverity, str] = {
     EventSeverity.INFO: config.TEXT,
-    EventSeverity.WARNING: config.ORANGE,
-    EventSeverity.FAULT: config.RED,
+    EventSeverity.WARNING: config.STATE_WARNING,
+    EventSeverity.FAULT: config.STATE_ALARM,
 }
 
 

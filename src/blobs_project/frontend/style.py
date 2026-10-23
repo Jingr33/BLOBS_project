@@ -91,7 +91,7 @@ STYLE_SHEET = f"""
         border: 0;
     }}
     QPushButton#running {{
-        background: {config.GREEN};
+        background: {config.STATE_OK};
         color: {config.PRIMARY_TEXT};
         font-weight: 700;
         border: 0;

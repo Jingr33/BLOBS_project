@@ -28,8 +28,8 @@ def test_entries_are_rendered_with_time_and_severity_colour() -> None:
     assert view.table.rowCount() == 3
     assert cell(view, 0, 0).text() == "12:00:00"
     assert cell(view, 0, 1).text() == "emergency stop"
-    assert cell(view, 0, 1).foreground().color().name() == config.RED
-    assert cell(view, 1, 1).foreground().color().name() == config.ORANGE
+    assert cell(view, 0, 1).foreground().color().name() == config.STATE_ALARM
+    assert cell(view, 1, 1).foreground().color().name() == config.STATE_WARNING
     assert cell(view, 2, 1).foreground().color().name() == config.TEXT
 
 

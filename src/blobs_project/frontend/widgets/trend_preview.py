@@ -86,7 +86,7 @@ class TrendPreview(QWidget):
         self._draw_axis_labels(painter, plot)
         self._draw_series(painter, plot)
         if self.show_energy:
-            PaintHelper.draw_energy_pill(
+            PaintHelper.draw_energy_label(
                 painter, self._total_energy_wh, plot.left() + 8, plot.top() + 8, 24.0
             )
 

@@ -234,4 +234,4 @@ def test_footer_shows_alerts_in_red() -> None:
 
     footer.set_status("Regulation stopped: emergency stop", alert=True)
 
-    assert config.RED in footer.status_label.styleSheet()
+    assert config.STATE_ALARM in footer.status_label.styleSheet()
