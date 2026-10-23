@@ -6,13 +6,14 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PyQt6.QtGui import QColor, QImage
 from PyQt6.QtWidgets import QApplication
 
+from blobs_project import config
 from blobs_project.frontend.widgets.trend_preview import TrendPreview
 
 # The application must outlive every standalone widget created in these tests.
 _APP = QApplication.instance() or QApplication([])
 
 
-def test_desired_line_is_drawn_in_red() -> None:
+def test_series_are_drawn_in_their_configured_colours() -> None:
     preview = TrendPreview()
     preview.resize(700, 320)
     preview.set_samples(
@@ -25,28 +26,46 @@ def test_desired_line_is_drawn_in_red() -> None:
     _APP.processEvents()
 
     image = preview.grab().toImage()
-    red = _count_pixels(image, lambda color: color.red() > 200 and color.green() < 150)
-    cyan = _count_pixels(
-        image,
-        lambda color: color.red() < 120 and color.green() > 170 and color.blue() > 170,
-    )
-    flow = _count_pixels(
-        image,
-        lambda color: (
-            color.red() > 220 and 100 < color.green() < 210 and color.blue() < 140
-        ),
-    )
-    power = _count_pixels(
-        image,
-        lambda color: (
-            120 < color.red() < 210 and color.green() < 180 and color.blue() > 220
-        ),
-    )
+    for color in (
+        config.TREND_ACTUAL_COLOR,
+        config.TREND_DESIRED_COLOR,
+        config.TREND_FLOW_COLOR,
+        config.TREND_POWER_COLOR,
+    ):
+        assert _color_pixels(image, color) > 40
 
-    assert red > 40
-    assert cyan > 30
-    assert flow > 4
-    assert power > 4
+
+def test_energy_label_is_only_painted_when_enabled() -> None:
+    enabled = _render_energy(show_energy=True)
+    disabled = _render_energy(show_energy=False)
+
+    assert _different_pixels(enabled, disabled) > 20
+
+
+def _render_energy(show_energy: bool) -> QImage:
+    preview = TrendPreview(show_energy=show_energy)
+    preview.resize(500, 300)
+    preview.set_total_energy(12.5)
+    preview.show()
+    _APP.processEvents()
+
+    image = preview.grab().toImage()
+    preview.close()
+    return image
+
+
+def _different_pixels(first: QImage, second: QImage) -> int:
+    count = 0
+    for x in range(first.width()):
+        for y in range(first.height()):
+            if first.pixelColor(x, y) != second.pixelColor(x, y):
+                count += 1
+    return count
+
+
+def _color_pixels(image: QImage, color: str) -> int:
+    target = QColor(color)
+    return _count_pixels(image, lambda pixel: pixel == target)
 
 
 def _count_pixels(image: QImage, predicate: Callable[[QColor], bool]) -> int:

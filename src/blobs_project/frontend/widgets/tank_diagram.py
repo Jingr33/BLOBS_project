@@ -15,6 +15,9 @@ ARROW_HALF_WIDTH: float = 8.0
 ARROW_BODY: float = 11.0
 TANK_FILL_INSET: float = 4.0
 MARKER_SIZE: float = 7.0
+READOUT_WIDTH: float = 150.0
+READOUT_HEIGHT: float = 26.0
+READOUT_GAP: float = 6.0
 
 
 class TankDiagram(QWidget):
@@ -26,6 +29,7 @@ class TankDiagram(QWidget):
         self._tank2_desired_cm = config.TANK_DESIRED_LEVEL_CM
         self._flow_l_min = 0.0
         self._pump_power_w = 0.0
+        self._pump_voltage_v = 0.0
         self._total_energy_wh = 0.0
 
     def set_process_data(self, regulation_values: RegulationValues) -> None:
@@ -33,6 +37,7 @@ class TankDiagram(QWidget):
         self._tank2_desired_cm = regulation_values.tank2_desired_cm
         self._flow_l_min = regulation_values.flow_l_min
         self._pump_power_w = regulation_values.pump_power_w
+        self._pump_voltage_v = regulation_values.pump_voltage_v
         self._total_energy_wh = regulation_values.total_energy_wh
         self.update()
 
@@ -49,7 +54,7 @@ class TankDiagram(QWidget):
         self._draw_scale(painter, geometry)
         self._draw_pump(painter, geometry.pump)
         self._draw_flow_readout(painter, geometry.tank2)
-        PaintHelper.draw_energy_pill(
+        PaintHelper.draw_energy_label(
             painter,
             self._total_energy_wh,
             12.0,
@@ -72,6 +77,7 @@ class TankDiagram(QWidget):
             geometry.tank2.center().y(),
             geometry.pill_height,
         )
+        self._draw_height_readout(painter, geometry)
 
     def _draw_pipes(self, painter: QPainter, geometry: TankGeometry) -> None:
         center_x = geometry.tank_center_x
@@ -92,7 +98,7 @@ class TankDiagram(QWidget):
         arrow_color = QColor(config.TANK_PIPE_COLOR)
         self._draw_arrow(painter, QPointF(center_x, geometry.tank1.top()), arrow_color)
         self._draw_arrow(painter, QPointF(center_x, geometry.tank2.top()), arrow_color)
-        flow_color = config.TANK_PUMP_COLOR if self._flow_l_min > 0.0 else config.MUTED
+        flow_color = config.STATE_OK if self._flow_l_min > 0.0 else config.MUTED
         self._draw_horizontal_arrow(
             painter,
             geometry.pump.right() + 8,
@@ -228,29 +234,57 @@ class TankDiagram(QWidget):
 
     def _draw_pump(self, painter: QPainter, pump: QRectF) -> None:
         painter.save()
-        pump_color = (
-            config.TANK_PUMP_COLOR if self._pump_power_w > 0.0 else config.MUTED
-        )
+        pump_color = config.STATE_OK if self._pump_power_w > 0.0 else config.MUTED
         painter.setPen(QPen(QColor(pump_color), 2))
         painter.setBrush(QColor(config.PUMP_BODY))
         painter.drawRoundedRect(pump, 8, 8)
         painter.setPen(QPen(QColor(pump_color), 1))
         painter.drawText(pump, Qt.AlignmentFlag.AlignCenter, tr("diagram.pump"))
         painter.restore()
-        self._draw_power_readout(painter, pump, pump_color)
+        self._draw_pump_readouts(painter, pump, pump_color)
 
-    def _draw_power_readout(self, painter: QPainter, pump: QRectF, color: str) -> None:
-        readout = QRectF(max(8.0, pump.left() - 16), pump.bottom() + 10, 150, 26)
+    def _draw_pump_readouts(self, painter: QPainter, pump: QRectF, color: str) -> None:
+        left = max(8.0, pump.left() - 16)
+        power_top = pump.bottom() + 10
         self._draw_readout(
             painter,
             color,
-            readout,
+            QRectF(left, power_top, READOUT_WIDTH, READOUT_HEIGHT),
             tr("diagram.power_value", value=self._pump_power_w),
+        )
+        self._draw_readout(
+            painter,
+            color,
+            QRectF(
+                left,
+                power_top + READOUT_HEIGHT + READOUT_GAP,
+                READOUT_WIDTH,
+                READOUT_HEIGHT,
+            ),
+            tr("diagram.voltage_value", value=self._pump_voltage_v),
+        )
+
+    def _draw_height_readout(self, painter: QPainter, geometry: TankGeometry) -> None:
+        readout = QRectF(
+            geometry.pill_x,
+            geometry.tank2.center().y() + geometry.pill_height / 2 + READOUT_GAP,
+            READOUT_WIDTH,
+            READOUT_HEIGHT,
+        )
+        self._draw_readout(
+            painter,
+            config.MUTED,
+            readout,
+            tr("diagram.height_value", value=self._tank2_actual_cm),
         )
 
     def _draw_flow_readout(self, painter: QPainter, tank: QRectF) -> None:
-        flow_color = config.TANK_PUMP_COLOR if self._flow_l_min > 0.0 else config.MUTED
-        readout = QRectF(tank.right() + PILL_GAP, tank.bottom() - 26, 150, 26)
+        flow_color = config.STATE_OK if self._flow_l_min > 0.0 else config.MUTED
+        top = min(
+            tank.bottom() + READOUT_GAP,
+            float(self.height()) - READOUT_HEIGHT - 4,
+        )
+        readout = QRectF(tank.right() + PILL_GAP, top, READOUT_WIDTH, READOUT_HEIGHT)
         self._draw_readout(
             painter,
             flow_color,

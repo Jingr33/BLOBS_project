@@ -16,6 +16,9 @@ from blobs_project.frontend.frames import (
     RegulationFrame,
     VisualizationFrame,
 )
+from blobs_project.frontend.widgets.alert_log_view import AlertLogView
+from blobs_project.frontend.widgets.automatic_controls import AutomaticControls
+from blobs_project.frontend.widgets.clock_widget import ClockWidget
 from blobs_project.frontend.widgets.trend_preview import TrendPreview
 
 
@@ -49,28 +52,30 @@ def test_main_window_composes_separate_frames() -> None:
 
     assert window.findChild(HeaderFrame) is not None
     assert window.findChild(RegulationFrame) is not None
+    assert window.findChild(AutomaticControls) is not None
     assert window.findChild(VisualizationFrame) is not None
     assert window.findChild(FooterFrame) is not None
     window.close()
     app.processEvents()
 
 
-def test_header_offers_regulation_toggle_and_actions() -> None:
+def test_header_offers_tare_and_emergency_stop_with_the_clock_in_the_corner() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
+    window.show()
+    app.processEvents()
     header = window.findChild(HeaderFrame)
     assert header is not None
 
     labels = [button.text() for button in header.findChildren(QPushButton)]
 
-    assert labels == [
-        "Show regulation",
-        "Export CSV data",
-        "Download CSV template",
-        "Tare",
-        "EMERGENCY STOP",
-    ]
+    assert labels == ["Tare", "EMERGENCY STOP"]
+
+    clock = header.findChild(ClockWidget)
+    emergency = header.findChild(QPushButton, "emergency")
+    assert clock is not None and emergency is not None
+    assert clock.x() > emergency.x()
 
     window.close()
     app.processEvents()
@@ -91,7 +96,18 @@ def test_visualization_frame_switches_between_pages() -> None:
     assert frame.current_page == 1
     assert chart_button.objectName() == "navActive"
     assert frame.findChildren(QPushButton)[0].objectName() == "nav"
-    assert len(frame.findChildren(QPushButton)) == 3
+    nav_buttons = [
+        button
+        for button in frame.findChildren(QPushButton)
+        if button.objectName() in ("nav", "navActive")
+    ]
+    assert [button.text() for button in nav_buttons] == [
+        "Overview",
+        "Chart",
+        "Statistics",
+        "Alerts",
+        "Settings",
+    ]
 
     window.close()
     app.processEvents()
@@ -114,108 +130,150 @@ def test_header_has_no_logo_and_window_uses_the_logo_icon() -> None:
     app.processEvents()
 
 
-def test_regulation_frame_offers_regulation_import_and_automatic() -> None:
+def test_regulation_controls_live_on_overview_and_settings() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
-    frame = window.findChild(RegulationFrame)
-    assert frame is not None
+    regulation = window.findChild(RegulationFrame)
+    automatic = window.findChild(AutomaticControls)
+    assert regulation is not None and automatic is not None
 
-    labels = [button.text() for button in frame.findChildren(QPushButton)]
-
-    assert labels == [
-        "Start regulation",
-        "Import CSV data",
-        "Start automatic regulation",
+    assert [button.text() for button in regulation.findChildren(QPushButton)] == [
+        "Start regulation"
+    ]
+    assert [button.text() for button in automatic.findChildren(QPushButton)] == [
+        "Start automatic regulation"
     ]
 
     window.close()
     app.processEvents()
 
 
-def test_import_and_automatic_buttons_share_one_row() -> None:
+def test_settings_tab_offers_csv_management() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
     window.show()
     app.processEvents()
-    header = window.findChild(HeaderFrame)
-    frame = window.findChild(RegulationFrame)
-    assert header is not None and frame is not None
+    frame = window.findChild(VisualizationFrame)
+    assert frame is not None
 
-    toggle = header.findChild(QPushButton, "regulationToggle")
-    assert toggle is not None
-    toggle.click()
+    settings_button = frame.findChildren(QPushButton)[4]
+    assert settings_button.text() == "Settings"
+    settings_button.click()
     app.processEvents()
 
-    buttons = {button.text(): button for button in frame.findChildren(QPushButton)}
-    import_button = buttons["Import CSV data"]
-    automatic_button = buttons["Start automatic regulation"]
-
-    assert import_button.y() == automatic_button.y()
-    assert automatic_button.x() > import_button.x()
+    assert frame.current_page == 4
+    for text in ("Export CSV data", "Import CSV data", "Download CSV template"):
+        button = next(
+            button
+            for button in frame.findChildren(QPushButton)
+            if button.text() == text
+        )
+        assert button.isVisible()
 
     window.close()
     app.processEvents()
 
 
-def test_regulation_frame_is_hidden_by_default_and_expands() -> None:
+def test_overview_hosts_the_regulation_strip_and_a_small_chart() -> None:
+    app = QApplication.instance() or QApplication([])
+
+    window = Application.create_window(RegulationService(), CsvService())
+    frame = window.findChild(VisualizationFrame)
+    assert frame is not None
+
+    captions = [label.text() for label in frame.findChildren(QLabel)]
+    assert "Desired [cm]:" in captions
+    assert "Deviation:" in captions
+    for caption in (
+        "Pump power [W]",
+        "Pump voltage [V]",
+        "Actual height [cm]",
+        "Flow [L/min]",
+    ):
+        assert caption not in captions
+
+    previews = frame.findChildren(TrendPreview)
+    assert len(previews) == 2
+
+    strip = window.findChild(RegulationFrame)
+    assert strip is not None
+    overview_page = strip.parentWidget()
+    assert overview_page is not None
+    overview_preview = overview_page.findChild(TrendPreview)
+    assert overview_preview is not None
+    assert not overview_preview.show_energy
+    assert any(
+        preview is not overview_preview and preview.show_energy for preview in previews
+    )
+
+    window.close()
+    app.processEvents()
+
+
+def test_there_is_no_regulation_tab_and_the_strip_stays_on_overview() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
     window.show()
     app.processEvents()
-    header = window.findChild(HeaderFrame)
-    frame = window.findChild(RegulationFrame)
-    visualization = window.findChild(VisualizationFrame)
-    assert header is not None and frame is not None and visualization is not None
+    frame = window.findChild(VisualizationFrame)
+    regulation = window.findChild(RegulationFrame)
+    automatic = window.findChild(AutomaticControls)
+    assert frame is not None and regulation is not None and automatic is not None
 
-    toggle = header.findChild(QPushButton, "regulationToggle")
-    assert toggle is not None
-    assert not frame.isVisible()
-    assert toggle.text() == "Show regulation"
+    nav_buttons = [
+        button
+        for button in frame.findChildren(QPushButton)
+        if button.objectName() in ("nav", "navActive")
+    ]
+    assert [button.text() for button in nav_buttons] == [
+        "Overview",
+        "Chart",
+        "Statistics",
+        "Alerts",
+        "Settings",
+    ]
+    assert regulation.isVisible()
+    assert not automatic.isVisible()
 
-    collapsed_width = visualization.width()
-    toggle.click()
+    nav_buttons[4].click()
     app.processEvents()
 
-    assert frame.isVisible()
-    assert toggle.text() == "Hide regulation"
-    assert visualization.width() < collapsed_width
+    assert automatic.isVisible()
+    assert not regulation.isVisible()
 
-    toggle.click()
+    nav_buttons[0].click()
     app.processEvents()
 
-    assert not frame.isVisible()
-    assert toggle.text() == "Show regulation"
-    assert visualization.width() == collapsed_width
+    assert frame.current_page == 0
+    assert regulation.isVisible()
 
     window.close()
     app.processEvents()
 
 
-def test_toggling_regulation_frame_does_not_change_the_run() -> None:
+def test_switching_tabs_does_not_change_the_run() -> None:
     app = QApplication.instance() or QApplication([])
 
     regulation_service = RegulationService()
     window = Application.create_window(regulation_service, CsvService())
     window.show()
     app.processEvents()
-    header = window.findChild(HeaderFrame)
-    frame = window.findChild(RegulationFrame)
-    assert header is not None and frame is not None
+    frame = window.findChild(VisualizationFrame)
+    regulation_frame = window.findChild(RegulationFrame)
+    assert frame is not None and regulation_frame is not None
 
-    toggle = header.findChild(QPushButton, "regulationToggle")
-    assert toggle is not None
-    regulation = frame.findChildren(QPushButton)[0]
+    regulation = regulation_frame.findChildren(QPushButton)[0]
     regulation.click()
     assert regulation_service.regulation_active
 
-    toggle.click()
+    frame.findChildren(QPushButton)[0].click()
     app.processEvents()
     assert regulation_service.regulation_active
 
-    toggle.click()
+    frame.findChildren(QPushButton)[4].click()
     app.processEvents()
     assert regulation_service.regulation_active
     assert regulation.text() == "Stop regulation"
@@ -231,25 +289,39 @@ def test_regulation_toggle_switches_between_start_and_stop() -> None:
     frame = window.findChild(RegulationFrame)
     assert frame is not None
 
-    buttons = frame.findChildren(QPushButton)
-    regulation = buttons[0]
-    automatic = buttons[2]
+    regulation = frame.findChildren(QPushButton)[0]
     assert regulation.text() == "Start regulation"
     assert regulation.objectName() == "primary"
-    assert automatic.text() == "Start automatic regulation"
-    assert automatic.objectName() == "primary"
 
     regulation.click()
     assert regulation.text() == "Stop regulation"
-    assert regulation.objectName() == "danger"
+    assert regulation.objectName() == "running"
 
     regulation.click()
     assert regulation.text() == "Start regulation"
     assert regulation.objectName() == "primary"
 
-    automatic.click()
-    assert automatic.text() == "Start automatic regulation"
-    assert automatic.objectName() == "primary"
+    window.close()
+    app.processEvents()
+
+
+def test_emergency_stop_is_logged_to_the_alerts_tab() -> None:
+    app = QApplication.instance() or QApplication([])
+
+    window = Application.create_window(RegulationService(), CsvService())
+    header = window.findChild(HeaderFrame)
+    alerts = window.findChild(AlertLogView)
+    assert header is not None and alerts is not None
+
+    emergency = header.findChild(QPushButton, "emergency")
+    assert emergency is not None
+    emergency.click()
+    app.processEvents()
+
+    assert alerts.table.rowCount() == 1
+    message = alerts.table.item(0, 1)
+    assert message is not None
+    assert message.text() == "Regulation stopped: emergency stop"
 
     window.close()
     app.processEvents()

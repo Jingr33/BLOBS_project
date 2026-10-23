@@ -11,18 +11,20 @@ from blobs_project import config
 from blobs_project.frontend.helpers.paint_helper import PaintHelper
 from blobs_project.translations import tr
 
-PLOT_LEFT_MARGIN: float = 52.0
-PLOT_TOP_MARGIN: float = 30.0
+PLOT_LEFT_MARGIN: float = 56.0
+PLOT_TOP_MARGIN: float = 46.0
 PLOT_RIGHT_MARGIN: float = 16.0
-PLOT_BOTTOM_MARGIN: float = 40.0
+PLOT_BOTTOM_MARGIN: float = 48.0
 Y_LABEL_WIDTH: float = 34.0
-Y_LABEL_BLOCK_HEIGHT: float = 34.0
+Y_LABEL_BLOCK_HEIGHT: float = 46.0
 X_LABEL_WIDTH: float = 56.0
+LEGEND_ROW_HEIGHT: float = 18.0
 
 
 class TrendPreview(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, show_energy: bool = True) -> None:
         super().__init__()
+        self.show_energy = show_energy
         self.setMinimumHeight(config.TREND_MINIMUM_HEIGHT)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._samples: list[tuple[float, float]] | None = None
@@ -83,9 +85,10 @@ class TrendPreview(QWidget):
         self._draw_grid(painter, plot)
         self._draw_axis_labels(painter, plot)
         self._draw_series(painter, plot)
-        PaintHelper.draw_energy_pill(
-            painter, self._total_energy_wh, plot.left() + 8, plot.top() + 8, 24.0
-        )
+        if self.show_energy:
+            PaintHelper.draw_energy_label(
+                painter, self._total_energy_wh, plot.left() + 8, plot.top() + 8, 24.0
+            )
 
     def _plot_rect(self) -> QRectF:
         return QRectF(
@@ -220,23 +223,32 @@ class TrendPreview(QWidget):
         plot: QRectF,
         entries: Sequence[tuple[str, Qt.PenStyle, str]],
     ) -> None:
+        if not entries:
+            return
         painter.save()
         painter.setFont(self.font())
-        x = plot.right() - 12
+        metrics = painter.fontMetrics()
+        row = 0
+        row_items = 0
+        row_right = plot.right() - 12
         for color, pen_style, label in reversed(entries):
-            width = painter.fontMetrics().horizontalAdvance(label) + 28
-            x -= width
+            width = metrics.horizontalAdvance(label) + 28
+            if row_items and row_right - width < plot.left():
+                row += 1
+                row_items = 0
+                row_right = plot.right() - 12
+            x = row_right - width
+            line_y = plot.top() - 14 - row * LEGEND_ROW_HEIGHT
             painter.setPen(QPen(QColor(color), 2, pen_style))
-            painter.drawLine(
-                QPointF(x, plot.top() - 14), QPointF(x + 16, plot.top() - 14)
-            )
+            painter.drawLine(QPointF(x, line_y), QPointF(x + 16, line_y))
             painter.setPen(QColor(config.MUTED))
             painter.drawText(
-                QRectF(x + 21, plot.top() - 23, width - 21, 18),
+                QRectF(x + 21, line_y - 9, width - 21, 18),
                 Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                 label,
             )
-            x -= 10
+            row_right = x - 10
+            row_items += 1
         painter.restore()
 
     def _draw_line(

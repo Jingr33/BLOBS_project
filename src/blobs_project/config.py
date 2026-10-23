@@ -18,6 +18,10 @@ CYAN: Final = "#4a5058"  # primary / active elements (slate grey)
 GREEN: Final = "#4a4f55"  # normal state - neutral instead of green
 ORANGE: Final = "#6b7280"  # T2 label, flow series - mid grey
 RED: Final = "#d6001c"  # alarm only
+# state colours reserved for semantic states (green = ok/running, orange = warning)
+STATE_OK: Final = "#1e7a3d"  # running / within limits
+STATE_WARNING: Final = "#b35c00"  # warning / out of limits
+STATE_ALARM: Final = RED  # emergency / fault
 VIOLET: Final = "#5f6670"  # T1 label - dark grey
 YELLOW: Final = "#b36b00"  # warning (amber), readable on light grey
 ACTUAL_BLUE: Final = "#1f5fa8"  # Actual value
@@ -56,6 +60,8 @@ TANK_PUMP_COLOR: Final = "#4a5058"  # running pump / flow
 
 # trend preview parameters
 TREND_MINIMUM_HEIGHT: Final = 240
+# smaller preview of the same chart shown on the Overview tab
+OVERVIEW_TREND_MINIMUM_HEIGHT: Final = 200
 TREND_TIME_WINDOW_S: Final = 120.0
 TREND_X_TICK_S: Final = 30.0
 TREND_ACTUAL_COLOR: Final = ACTUAL_BLUE
@@ -93,6 +99,8 @@ TOWER_LEVEL_OFFSET_CM: Final = 1.54
 # Pump cap; above it the upper tank overflows.
 TOWER_PUMP_MAX_V: Final = 7.5
 SAMPLE_LOG_LIMIT: Final = 5000
+# events kept in the Alerts tab log
+EVENT_LOG_LIMIT: Final = 500
 
 # regulation loop
 # Controller and measurement period [s].
