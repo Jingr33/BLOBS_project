@@ -94,12 +94,14 @@ def test_save_template_writes_a_loadable_profile(tmp_path: Path) -> None:
     text = path.read_text(encoding="utf-8")
     assert "# One desired lower-tank level in cm per row" in text
     assert "# Values must be numeric and between 3 and 22 cm" in text
+    assert "# step_duration_min=5" in text
     assert "hladina_cm\n" in text
 
     profile = CsvService().load_or_raise(path)
 
     assert isinstance(profile, CsvProfile)
     assert profile.tank2_levels == (10.0, 15.0, 12.5, 8.0)
+    assert profile.step_s == 300.0
 
 
 def test_save_template_reports_a_file_error(tmp_path: Path) -> None:

@@ -66,8 +66,7 @@ def test_run_cannot_be_loaded_during_regulation() -> None:
 def test_profile_steps_last_the_chosen_duration(tmp_path: Path) -> None:
     """Each level is held for the step duration and the run ends after the last."""
     service = RegulationService()
-    service.set_step_s(60.0)
-    service.set_profile(CsvProfile((10.0, 12.0)))
+    service.set_profile(CsvProfile((10.0, 12.0), step_s=60.0))
     service.toggle_self_driven()
 
     for _ in range(650):
@@ -82,15 +81,15 @@ def test_profile_steps_last_the_chosen_duration(tmp_path: Path) -> None:
     assert service.tower.pump_voltage == 0.0
 
 
-def test_step_duration_cannot_change_during_a_profile() -> None:
+def test_step_duration_is_loaded_from_profile_csv(tmp_path: Path) -> None:
+    path = tmp_path / "profile.csv"
+    path.write_text("# step_duration_min=2.5\n10\n", encoding="utf-8")
     service = RegulationService()
-    service.set_profile(CsvProfile((10.0,)))
-    service.toggle_self_driven()
 
-    service.set_step_s(10.0)
+    service.set_profile(CsvProfile.from_text(path.read_text(encoding="utf-8")))
 
     assert service.profile is not None
-    assert service.profile.step_s == service.step_s != 10.0
+    assert service.profile.step_s == service.step_s == 150.0
 
 
 def test_export_writes_the_statistics_next_to_the_run(tmp_path: Path) -> None:
