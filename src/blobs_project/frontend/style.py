@@ -12,6 +12,9 @@ STYLE_SHEET = f"""
         border: 1px solid {config.PANEL_BORDER};
         border-radius: 12px;
     }}
+    QFrame#panel QLabel {{
+        background: transparent;
+    }}
     QFrame#regulation {{
         background: transparent;
         border: none;

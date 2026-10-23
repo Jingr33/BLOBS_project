@@ -99,7 +99,7 @@ class TrendPreview(QWidget):
         )
 
     def _draw_grid(self, painter: QPainter, plot: QRectF) -> None:
-        painter.setPen(QPen(QColor("#29405d"), 1))
+        painter.setPen(QPen(QColor(config.GRID), 1))
         for tick in config.TANK_SCALE_TICKS:
             y = plot.bottom() - plot.height() * (tick / config.TANK_LEVEL_MAX_CM)
             painter.drawLine(QPointF(plot.left(), y), QPointF(plot.right(), y))
