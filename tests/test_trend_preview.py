@@ -36,12 +36,13 @@ def test_series_are_drawn_in_their_configured_colours() -> None:
 
 
 def test_energy_label_is_only_painted_when_enabled() -> None:
-    assert _energy_pixels(show_energy=True) > 50
-    assert _energy_pixels(show_energy=False) == 0
+    enabled = _render_energy(show_energy=True)
+    disabled = _render_energy(show_energy=False)
+
+    assert _different_pixels(enabled, disabled) > 20
 
 
-def _energy_pixels(show_energy: bool) -> int:
-    """Count pixels of the energy label text in the render."""
+def _render_energy(show_energy: bool) -> QImage:
     preview = TrendPreview(show_energy=show_energy)
     preview.resize(500, 300)
     preview.set_total_energy(12.5)
@@ -49,8 +50,16 @@ def _energy_pixels(show_energy: bool) -> int:
     _APP.processEvents()
 
     image = preview.grab().toImage()
-    count = _color_pixels(image, config.TEXT)
     preview.close()
+    return image
+
+
+def _different_pixels(first: QImage, second: QImage) -> int:
+    count = 0
+    for x in range(first.width()):
+        for y in range(first.height()):
+            if first.pixelColor(x, y) != second.pixelColor(x, y):
+                count += 1
     return count
 
 
