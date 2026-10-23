@@ -92,7 +92,9 @@ CONTROL_PERIOD_S: Final = 0.5
 PI_KP_V_PER_M: Final = 46.8
 PI_KI: Final = 1.28
 # Predictive controller model and tuning (validate against physical runs).
-MPC_HORIZON_STEPS: Final = 50
+# At 0.5 s per step this predicts 37.5 s, about 1.5 times the slow model time
+# constant near a 10 cm lower-tank setpoint.
+MPC_HORIZON_STEPS: Final = 75
 MPC_MOVE_WEIGHT: Final = 0.1
 MPC_INTEGRAL_GAIN: Final = 0.010
 # Bound accumulated tracking error to prevent delayed-plant integral windup.

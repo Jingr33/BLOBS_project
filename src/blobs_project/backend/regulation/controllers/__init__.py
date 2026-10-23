@@ -1,11 +1,12 @@
 from .mpc_controller import MPCController, MPCRegulationController
-from .mpc_model import PlantParams, get_discrete_model
+from .mpc_model import DiscretePlantModel, PlantParams, get_discrete_model
 from .observer import KalmanFilter, solve_kalman_gain
 from .pi_controller import PIController, PIRegulationController
 from .regulation_controller_base import ControllerError, RegulationControllerBase
 
 __all__ = [
     "ControllerError",
+    "DiscretePlantModel",
     "KalmanFilter",
     "MPCController",
     "MPCRegulationController",

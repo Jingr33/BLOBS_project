@@ -49,9 +49,9 @@ class MPCController:
         self.integral_limit_m_s = integral_limit_m_s
         self.rate_limit_v_s = rate_limit_v_s
         self.integral_error_m_s = 0.0
-        self.Ad, self.Bd, self.Cd, self.h_H_eq, self.u_eq = get_discrete_model(
-            params, target_h_L_m, sample_period_s
-        )
+        model = get_discrete_model(params, target_h_L_m, sample_period_s)
+        self.Ad, self.Bd, self.Cd = model.Ad, model.Bd, model.Cd
+        self.h_H_eq, self.u_eq = model.h_H_eq_m, model.u_eq_v
         self._build_optimizer()
 
     def _build_optimizer(self) -> None:
@@ -217,33 +217,40 @@ class MPCRegulationController(RegulationControllerBase):
         if not 0 <= measured_m <= config.LEVEL_TRIP_CM / 100.0:
             raise ValueError("measured level is outside the MPC operating range")
 
-        if self._mpc is None or target_m != self._target_h_L_m:
-            self._configure(target_m)
-        assert self._observer is not None and self._mpc is not None
-
-        state = self._observer.update(self._last_output_v, measured_m)
-        output = self._mpc.step(float(state[0]), measured_m, self._last_output_v, dt_s)
+        try:
+            if self._mpc is None or target_m != self._target_h_L_m:
+                self._configure(target_m)
+            if self._observer is None or self._mpc is None:
+                raise ControllerError("MPC controller was not initialized")
+            state = self._observer.update(self._last_output_v, measured_m)
+            output = self._mpc.step(
+                float(state[0]), measured_m, self._last_output_v, dt_s
+            )
+        except ControllerError:
+            raise
+        except Exception as error:
+            raise ControllerError(f"MPC controller update failed: {error}") from error
         self._last_output_v = output
         return output
 
     def _configure(self, target_h_L_m: float) -> None:
-        Ad, Bd, Cd, h_H_eq, u_eq = get_discrete_model(
-            self._params, target_h_L_m, config.CONTROL_PERIOD_S
-        )
-        equilibrium = np.asarray([[h_H_eq], [target_h_L_m]], dtype=float)
+        model = get_discrete_model(self._params, target_h_L_m, config.CONTROL_PERIOD_S)
+        equilibrium = np.asarray([[model.h_H_eq_m], [target_h_L_m]], dtype=float)
         if self._observer is None:
             self._observer = KalmanFilter(
-                Ad,
-                Bd,
-                Cd,
+                model.Ad,
+                model.Bd,
+                model.Cd,
                 np.diag([config.MPC_PROCESS_NOISE_VARIANCE_M2] * 2),
                 np.asarray([[config.MPC_SENSOR_NOISE_VARIANCE_M2]], dtype=float),
                 equilibrium,
-                u_eq,
+                model.u_eq_v,
                 self._params.H,
             )
         else:
-            self._observer.set_model(Ad, Bd, Cd, equilibrium, u_eq)
+            self._observer.set_model(
+                model.Ad, model.Bd, model.Cd, equilibrium, model.u_eq_v
+            )
         self._mpc = MPCController(
             self._params,
             target_h_L_m,
