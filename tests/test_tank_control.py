@@ -3,8 +3,9 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QLabel
 
+from blobs_project import config
 from blobs_project.frontend.widgets.tank_control import TankControl
 
 _APP = QApplication.instance() or QApplication([])
@@ -24,7 +25,7 @@ def test_refresh_does_not_overwrite_the_value_being_typed(
     control.desired_spin.setValue(12.0)
     monkeypatch.setattr(control.desired_spin, "hasFocus", lambda: True)
 
-    control.set_values(10.0, 20.0, 0.0)
+    control.set_values(20.0, 0.0)
 
     assert control.desired_spin.value() == 12.0
 
@@ -32,6 +33,27 @@ def test_refresh_does_not_overwrite_the_value_being_typed(
 def test_refresh_shows_the_service_setpoint_when_not_editing() -> None:
     control = TankControl("T2", "#ffffff")
 
-    control.set_values(10.0, 15.0, 0.0)
+    control.set_values(15.0, 0.0)
 
     assert control.desired_spin.value() == 15.0
+
+
+def test_deviation_within_tolerance_is_green() -> None:
+    control = TankControl("T2", "#ffffff")
+
+    control.set_values(20.0, 1.0)
+
+    deviation = control.findChild(QLabel, "deviation")
+    assert deviation is not None
+    assert config.STATE_OK in deviation.styleSheet()
+
+
+def test_deviation_beyond_tolerance_is_warning_orange_not_red() -> None:
+    control = TankControl("T2", "#ffffff")
+
+    control.set_values(20.0, 40.0)
+
+    deviation = control.findChild(QLabel, "deviation")
+    assert deviation is not None
+    assert config.STATE_WARNING in deviation.styleSheet()
+    assert config.STATE_ALARM not in deviation.styleSheet()

@@ -32,12 +32,12 @@ class FooterFrame(QFrame):
 
     def set_status(self, text: str, alert: bool = False) -> None:
         self.status_label.setText(self._status_text(text))
-        color = config.RED if alert else config.GREEN
+        color = config.STATE_ALARM if alert else config.STATE_OK
         self.status_label.setStyleSheet(f"color: {color}; font-weight: 700;")
 
     def set_connection(self, simulated: bool) -> None:
         key = "footer.connection_simulated" if simulated else "footer.connection_card"
-        color = config.ORANGE if simulated else config.GREEN
+        color = config.STATE_WARNING if simulated else config.STATE_OK
         self.connection_label.setText(self._status_text(tr(key)))
         self.connection_label.setStyleSheet(f"color: {color}; font-weight: 700;")
 

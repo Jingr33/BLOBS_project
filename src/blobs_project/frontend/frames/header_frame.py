@@ -10,7 +10,6 @@ from blobs_project.translations import tr
 class HeaderFrame(QFrame):
     action_requested = pyqtSignal(object)
     emergency_stop_requested = pyqtSignal()
-    regulation_toggle_requested = pyqtSignal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -27,11 +26,9 @@ class HeaderFrame(QFrame):
         title_box.setContentsMargins(5, 0, 0, 0)
         layout.addLayout(title_box)
         layout.addStretch()
-        layout.addWidget(ClockWidget())
-        layout.addStretch()
-        self._add_regulation_toggle_button(layout)
         self._add_actions(layout)
         self._add_emergency_stop_button(layout)
+        layout.addWidget(ClockWidget())
 
     def _add_actions(self, layout: QHBoxLayout) -> None:
         for action_id in visible_actions(ActionPlace.HEADER):
@@ -46,19 +43,6 @@ class HeaderFrame(QFrame):
             )
         )
         layout.addWidget(button)
-
-    def _add_regulation_toggle_button(self, layout: QHBoxLayout) -> None:
-        self._regulation_toggle_button = QPushButton(tr("regulation.show"))
-        self._regulation_toggle_button.setObjectName("regulationToggle")
-        self._regulation_toggle_button.clicked.connect(
-            self.regulation_toggle_requested.emit
-        )
-        layout.addWidget(self._regulation_toggle_button)
-
-    def set_regulation_visible(self, visible: bool) -> None:
-        self._regulation_toggle_button.setText(
-            tr("regulation.hide" if visible else "regulation.show")
-        )
 
     def _add_emergency_stop_button(self, layout: QHBoxLayout) -> None:
         button = QPushButton(tr("regulation.emergency_stop"))

@@ -16,20 +16,22 @@ class TankControl(QFrame):
         self._build_ui(title, color)
 
     def _build_ui(self, title: str, color: str) -> None:
+        """One compact row: tank pill, setpoint and the level deviation."""
         layout = QGridLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setVerticalSpacing(8)
         layout.setHorizontalSpacing(12)
 
-        layout.addWidget(self._pill(title, color), 0, 0, 1, 2)
-        layout.addWidget(QtHelper.make_caption(tr("regulation.desired")), 1, 0)
-        layout.addWidget(self._build_desired_spin(), 1, 1)
-        self._actual_label = QtHelper.add_metric_row(layout, 2, tr("regulation.actual"))
-        self._deviation_label = QtHelper.add_metric_row(
-            layout, 3, tr("regulation.deviation")
+        layout.addWidget(self._pill(title, color), 0, 0)
+        layout.addWidget(QtHelper.make_caption(tr("regulation.desired")), 0, 1)
+        layout.addWidget(self._build_desired_spin(), 0, 2)
+        layout.addWidget(QtHelper.make_caption(tr("regulation.deviation")), 0, 3)
+        self._deviation_label = QLabel("—")
+        self._deviation_label.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         )
-        self._flow_label = QtHelper.add_metric_row(layout, 4, tr("regulation.flow"))
-        layout.setColumnStretch(1, 1)
+        self._deviation_label.setObjectName("deviation")
+        layout.addWidget(self._deviation_label, 0, 4)
 
     @staticmethod
     def _pill(title: str, color: str) -> QLabel:
@@ -56,35 +58,18 @@ class TankControl(QFrame):
     def desired_spin(self) -> QDoubleSpinBox:
         return self._desired_spin
 
-    def set_values(
-        self,
-        actual_cm: float | None,
-        desired_cm: float,
-        deviation_percent: float | None,
-    ) -> None:
+    def set_values(self, desired_cm: float, deviation_percent: float) -> None:
+        """Show the service setpoint unless it is being typed, and the deviation."""
         if not self._desired_spin.hasFocus():
             self._desired_spin.blockSignals(True)
             self._desired_spin.setValue(desired_cm)
             self._desired_spin.blockSignals(False)
 
-        if actual_cm is None or deviation_percent is None:
-            self._actual_label.setText(tr("regulation.no_sensor"))
-            self._actual_label.setStyleSheet(f"color: {config.MUTED};")
-            self._deviation_label.setText("—")
-            self._deviation_label.setStyleSheet(f"color: {config.MUTED};")
-            return
-
-        self._actual_label.setText(tr("common.value_cm", value=f"{actual_cm:.1f}"))
-        self._actual_label.setStyleSheet(f"color: {config.TEXT};")
         within_limits = abs(deviation_percent) <= config.DEVIATION_OK_PERCENT
         arrow = "▲" if deviation_percent >= 0 else "▼"
+        color = config.STATE_OK if within_limits else config.STATE_WARNING
         self._deviation_label.setText(f"{arrow} {deviation_percent:+.1f} %")
-        self._deviation_label.setStyleSheet(
-            f"color: {config.GREEN if within_limits else config.RED}; font-weight: 700;"
-        )
+        self._deviation_label.setStyleSheet(f"color: {color}; font-weight: 700;")
 
     def set_desired_editable(self, editable: bool) -> None:
         self._desired_spin.setEnabled(editable)
-
-    def set_flow(self, flow_l_min: float) -> None:
-        self._flow_label.setText(f"{flow_l_min:.1f}")

@@ -1,5 +1,9 @@
+from collections.abc import Callable
+
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QGridLayout, QLabel, QWidget
+from PyQt6.QtWidgets import QGridLayout, QLabel, QPushButton, QWidget
+
+from blobs_project.translations import tr
 
 
 class QtHelper:
@@ -24,6 +28,25 @@ class QtHelper:
         value.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         grid.addWidget(value, row, 1)
         return value
+
+    @staticmethod
+    def make_button(
+        text: str, object_name: str, slot: Callable[[], None]
+    ) -> QPushButton:
+        """Create a button with an optional object name used by the stylesheet."""
+        button = QPushButton(text)
+        if object_name:
+            button.setObjectName(object_name)
+        button.clicked.connect(slot)
+        return button
+
+    @staticmethod
+    def set_run_button_state(
+        button: QPushButton, active: bool, start_key: str, stop_key: str
+    ) -> None:
+        """Switch a start/stop toggle between its running and idle captions."""
+        button.setText(tr(stop_key if active else start_key))
+        QtHelper.set_style_name(button, "running" if active else "primary")
 
     @staticmethod
     def set_style_name(widget: QWidget, name: str) -> None:
