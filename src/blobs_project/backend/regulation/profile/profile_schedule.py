@@ -10,7 +10,6 @@ class ProfileSchedule:
 
     def __init__(self) -> None:
         self._profile: CsvProfile | None = None
-        self._step_s = config.PROFILE_STEP_S
 
     @property
     def profile(self) -> CsvProfile | None:
@@ -19,15 +18,10 @@ class ProfileSchedule:
     @property
     def step_s(self) -> float:
         """Return how long each level is held [s]."""
-        return self._step_s
+        return config.PROFILE_STEP_S if self._profile is None else self._profile.step_s
 
     def set_profile(self, profile: CsvProfile | None) -> None:
-        self._profile = None if profile is None else profile.with_step(self._step_s)
-
-    def set_step_s(self, step_s: float) -> None:
-        self._step_s = step_s
-        if self._profile is not None:
-            self._profile = self._profile.with_step(step_s)
+        self._profile = profile
 
     def step_at(self, elapsed_s: float) -> int | None:
         """Return the 0-based step at ``elapsed_s``, or ``None`` without a profile."""

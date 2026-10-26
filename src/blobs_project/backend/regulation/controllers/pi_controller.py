@@ -73,6 +73,11 @@ class PIRegulationController(RegulationControllerBase):
         """Clear the integral before a new run."""
         self._pi.reset()
 
+    @property
+    def output_limits_v(self) -> tuple[float, float]:
+        """Return the PI controller's pump-voltage bounds."""
+        return self._pi.min_out, self._pi.max_out
+
     def compute(self, dt_s: float, desired_cm: float, actual_cm: float) -> float:
         """Return the pump voltage for ``desired_cm`` and ``actual_cm``."""
         return self._pi.compute(desired_cm / 100.0, actual_cm / 100.0, dt_s)

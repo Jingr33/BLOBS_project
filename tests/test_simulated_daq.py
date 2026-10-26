@@ -1,7 +1,7 @@
 import pytest
 
 from blobs_project import config
-from blobs_project.backend.hardware import SimulatedDAQ, Tower
+from blobs_project.backend.hardware import SimulatedDAQ, Tower, TowerCalibration
 
 
 class FakeClock:
@@ -15,10 +15,10 @@ class FakeClock:
 def settle(volts: float, seconds: float = 600.0) -> float:
     """Return the level above the sensor zero [cm] after ``seconds`` at ``volts``."""
     clock = FakeClock()
-    tower = Tower(SimulatedDAQ(clock=clock))
+    tower = Tower(SimulatedDAQ(clock=clock), TowerCalibration(offset_cm=0.0))
     tower.set_pump_voltage(volts)
     clock.t = seconds
-    return tower.read_level_cm() - config.TOWER_LEVEL_OFFSET_CM
+    return tower.read_level_cm()
 
 
 def test_empty_tank_reads_zero() -> None:

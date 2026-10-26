@@ -1,4 +1,4 @@
-"""Running median of the level sensor against single spikes."""
+"""Median filtering of level sensor readings."""
 
 import math
 from collections import deque

@@ -3,7 +3,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PyQt6.QtWidgets import QApplication, QDoubleSpinBox, QLabel, QPushButton
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton
 
 from blobs_project.backend.regulation import ProfileLoader, RegulationService
 from blobs_project.frontend.frames.regulation_frame import RegulationFrame
@@ -108,14 +108,3 @@ def test_starting_automatic_disables_the_overview_button(tmp_path: Path) -> None
     assert not regulation_service.self_driven_active
     assert _button(controls).text() == "Start automatic regulation"
     assert _regulation_button(strip).isEnabled()
-
-
-def test_step_duration_is_applied_to_the_service() -> None:
-    regulation_service = RegulationService()
-    controls = _controls(regulation_service)
-    step_spin = controls.findChild(QDoubleSpinBox)
-    assert step_spin is not None
-
-    step_spin.setValue(12.5)
-
-    assert regulation_service.step_s == 750.0

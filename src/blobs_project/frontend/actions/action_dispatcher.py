@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QFileDialog, QWidget
 from blobs_project.backend.csv_management import CsvService
 from blobs_project.backend.hardware import HardwareError
 from blobs_project.backend.regulation import (
+    CsvError,
     CsvProfile,
     RegulationService,
     SampleExportStatus,
@@ -51,9 +52,10 @@ class ActionDispatcher:
         )
         if not path:
             return None
-        loaded = self._csv_service.load(Path(path))
-        if loaded is None:
-            return tr("status.profile_invalid")
+        try:
+            loaded = self._csv_service.load_or_raise(Path(path))
+        except CsvError as error:
+            return tr("status.profile_invalid", reason=error)
         if isinstance(loaded, CsvProfile):
             self._regulation_service.set_profile(loaded)
             return tr("status.profile_loaded", rows=loaded.row_count)

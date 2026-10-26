@@ -32,7 +32,7 @@ def test_exported_run_is_plain_csv() -> None:
 
 
 def test_run_with_a_broken_row_is_rejected() -> None:
-    with pytest.raises(CsvError):
+    with pytest.raises(CsvError, match=r"line 4: expected 6 columns, found 2"):
         RunCsv.from_text(RunCsv.to_text(SAMPLES) + "3.0,10.00\n")
 
 
@@ -66,8 +66,7 @@ def test_run_cannot_be_loaded_during_regulation() -> None:
 def test_profile_steps_last_the_chosen_duration(tmp_path: Path) -> None:
     """Each level is held for the step duration and the run ends after the last."""
     service = RegulationService()
-    service.set_step_s(60.0)
-    service.set_profile(CsvProfile((10.0, 12.0)))
+    service.set_profile(CsvProfile((10.0, 12.0), step_s=60.0))
     service.toggle_self_driven()
 
     for _ in range(650):
@@ -82,15 +81,15 @@ def test_profile_steps_last_the_chosen_duration(tmp_path: Path) -> None:
     assert service.tower.pump_voltage == 0.0
 
 
-def test_step_duration_cannot_change_during_a_profile() -> None:
+def test_step_duration_is_loaded_from_profile_csv(tmp_path: Path) -> None:
+    path = tmp_path / "profile.csv"
+    path.write_text("# step_duration_min=2.5\n10\n", encoding="utf-8")
     service = RegulationService()
-    service.set_profile(CsvProfile((10.0,)))
-    service.toggle_self_driven()
 
-    service.set_step_s(10.0)
+    service.set_profile(CsvProfile.from_text(path.read_text(encoding="utf-8")))
 
     assert service.profile is not None
-    assert service.profile.step_s == service.step_s != 10.0
+    assert service.profile.step_s == service.step_s == 150.0
 
 
 def test_export_writes_the_statistics_next_to_the_run(tmp_path: Path) -> None:
@@ -114,10 +113,26 @@ def test_run_is_told_from_a_profile() -> None:
 
 
 def test_run_without_all_columns_is_rejected() -> None:
-    with pytest.raises(CsvError):
+    with pytest.raises(
+        CsvError, match="recorded run header is missing required column"
+    ):
         RunCsv.from_text("time_s,actual_cm\n1.0,9.5\n")
 
 
 def test_run_without_samples_is_rejected() -> None:
     with pytest.raises(CsvError):
         RunCsv.from_text(RunCsv.to_text(()))
+
+
+def test_run_with_non_numeric_field_reports_column_and_line() -> None:
+    text = RunCsv.to_text(SAMPLES).replace("1.0,10.00", "one,10.00")
+
+    with pytest.raises(CsvError, match=r"line 2: time_s value 'one' is not a number"):
+        RunCsv.from_text(text)
+
+
+def test_run_with_non_finite_field_is_rejected() -> None:
+    text = RunCsv.to_text(SAMPLES).replace("1.0,10.00", "nan,10.00")
+
+    with pytest.raises(CsvError, match=r"line 2: time_s value 'nan' must be finite"):
+        RunCsv.from_text(text)

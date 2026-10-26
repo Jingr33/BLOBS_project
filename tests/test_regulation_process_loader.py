@@ -42,8 +42,77 @@ def test_csv_profile_rejects_two_columns(tmp_path: Path) -> None:
 
 
 def test_csv_profile_rejects_non_numeric_rows() -> None:
-    with pytest.raises(CsvError):
+    with pytest.raises(CsvError, match=r"line 2: level 'not-a-number' is not a number"):
         CsvProfile.from_text("10.0\nnot-a-number\n")
+
+
+def test_csv_profile_rejects_unrecognized_first_text_row() -> None:
+    with pytest.raises(CsvError, match="unrecognized profile header or level"):
+        CsvProfile.from_text("not-a-level\n10\n")
+
+
+def test_profile_loader_reports_invalid_text_encoding(tmp_path: Path) -> None:
+    path = tmp_path / "invalid-encoding.csv"
+    path.write_bytes(b"\xff\xfe\xfa")
+
+    with pytest.raises(CsvError, match="file is not valid UTF-8 text"):
+        ProfileLoader.load_profile(path)
+
+
+def test_csv_profile_comments_and_blank_rows_are_ignored() -> None:
+    profile = CsvProfile.from_text(
+        "# profile levels\n# step_duration_min=2.5\n\n# one level per row\n"
+        "hladina_cm\n10\n12.5\n"
+    )
+
+    assert profile.tank2_levels == (10.0, 12.5)
+    assert profile.step_s == 150.0
+
+
+def test_csv_profile_uses_default_duration_when_metadata_is_omitted() -> None:
+    profile = CsvProfile.from_text("hladina_cm\n10\n12.5\n")
+
+    assert profile.step_s == config.PROFILE_STEP_S
+
+
+def test_csv_profile_accepts_whitespace_around_duration_separator() -> None:
+    profile = CsvProfile.from_text("# step_duration_min = 2.5\n10\n")
+
+    assert profile.step_s == 150.0
+
+
+@pytest.mark.parametrize(
+    ("metadata", "message"),
+    [
+        ("# step_duration_min=unknown\n", "is not a number"),
+        ("# step_duration_min=nan\n", "must be finite"),
+        ("# step_duration_min=0.25\n", "outside the allowed range"),
+        (
+            "# step_duration_min=5\n# step_duration_min=6\n",
+            "specified more than once",
+        ),
+    ],
+)
+def test_csv_profile_rejects_invalid_step_duration(metadata: str, message: str) -> None:
+    with pytest.raises(CsvError, match=message):
+        CsvProfile.from_text(f"{metadata}10\n")
+
+
+def test_csv_profile_reports_non_finite_levels() -> None:
+    with pytest.raises(CsvError, match=r"line 2: level 'nan' must be a finite number"):
+        CsvProfile.from_text("hladina_cm\nnan\n")
+
+
+def test_csv_profile_reports_out_of_range_levels() -> None:
+    with pytest.raises(
+        CsvError, match=r"line 2: level 25 cm is outside the allowed range"
+    ):
+        CsvProfile.from_text("hladina_cm\n25\n")
+
+
+def test_csv_profile_reports_extra_columns() -> None:
+    with pytest.raises(CsvError, match=r"line 1: expected 1 column.*found 2"):
+        CsvProfile.from_text("10,11\n")
 
 
 def test_csv_profile_rejects_file_without_rows() -> None:

@@ -28,6 +28,29 @@ class TowerCalibration:
     offset_cm: float = config.TOWER_LEVEL_OFFSET_CM
     max_pump_v: float = config.TOWER_PUMP_MAX_V
 
+    def __post_init__(self) -> None:
+        numeric_values = {
+            "cm_per_v": self.cm_per_v,
+            "zero_v": self.zero_v,
+            "offset_cm": self.offset_cm,
+            "max_pump_v": self.max_pump_v,
+        }
+        for name, value in numeric_values.items():
+            if not math.isfinite(value):
+                raise ValueError(f"{name} must be finite")
+        if self.cm_per_v <= 0:
+            raise ValueError("cm_per_v must be positive")
+        if not 0 <= self.max_pump_v <= config.TOWER_PUMP_MAX_V:
+            raise ValueError(
+                f"max_pump_v must be between 0 and {config.TOWER_PUMP_MAX_V} V"
+            )
+        for name, channel in (
+            ("level_channel", self.level_channel),
+            ("pump_channel", self.pump_channel),
+        ):
+            if not isinstance(channel, str) or not channel.strip():
+                raise ValueError(f"{name} must not be empty")
+
 
 class Tower:
     """Calibrated, safe access to one tower through any ``DAQ_base``.
@@ -58,6 +81,11 @@ class Tower:
     def zero_v(self) -> float:
         """Return the sensor voltage that reads as 0 cm."""
         return self._zero_v
+
+    @property
+    def max_pump_voltage(self) -> float:
+        """Return the configured pump-voltage cap for this tower."""
+        return self._cal.max_pump_v
 
     def open(self) -> None:
         """Open the DAQ and set the pump to 0 V; close the DAQ again if that fails."""
@@ -93,7 +121,9 @@ class Tower:
     def read_level_cm(self) -> float:
         """Return the lower-tank level in cm above the tank bottom."""
         level_cm = (self.read_level_v() - self._zero_v) * self._cal.cm_per_v
-        return level_cm + self._cal.offset_cm
+        if not math.isfinite(level_cm):
+            return level_cm
+        return max(0.0, level_cm + self._cal.offset_cm)
 
     def set_pump_voltage(self, volts: float) -> float:
         """Clamp ``volts`` to the safe range, write it and return the applied value.

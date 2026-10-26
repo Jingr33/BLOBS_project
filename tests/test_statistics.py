@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import QApplication
 
 from blobs_project import config
 from blobs_project.backend.dtos import Sample
-from blobs_project.backend.hardware import SimulatedDAQ, Tower
+from blobs_project.backend.hardware import SimulatedDAQ, Tower, TowerCalibration
 from blobs_project.backend.regulation import RegulationService
 from blobs_project.backend.statistics import StatisticsCalculator
 from blobs_project.frontend.widgets.statistics_view import StatisticsView
@@ -117,7 +117,12 @@ def test_efficiency_skips_the_time_after_a_change() -> None:
 def test_service_statistics_follow_a_simulated_run() -> None:
     """A run on the simulated tower yields one settled step and some energy."""
     clock = [0.0]
-    service = RegulationService(tower=Tower(SimulatedDAQ(clock=lambda: clock[0])))
+    service = RegulationService(
+        tower=Tower(
+            SimulatedDAQ(clock=lambda: clock[0]),
+            TowerCalibration(offset_cm=0.0),
+        )
+    )
     service.regulation_values.tank2_desired_cm = 10.0
     service.toggle_regulation()
     for _ in range(4000):

@@ -80,8 +80,11 @@ DEVIATION_OK_PERCENT: Final = 5.0
 
 PROFILE_DURATION_S: Final = 120.0
 PROFILE_SAMPLE_INTERVAL_S: Final = 1.0
-# Default time one profile level is held [s]; the operator can change it.
+# Default level hold time [s] for legacy profiles without duration metadata.
 PROFILE_STEP_S: Final = 300.0
+# Allowed level hold time [s] in profile CSV duration metadata.
+PROFILE_MIN_STEP_S: Final = 30.0
+PROFILE_MAX_STEP_S: Final = 3600.0
 
 # NI DAQ / tower hardware
 # NI-DAQmx device name of the USB-6001 card.
@@ -108,12 +111,25 @@ CONTROL_PERIOD_S: Final = 0.5
 # PI gains (CHR tuning), level in metres -> pump volts.
 PI_KP_V_PER_M: Final = 46.8
 PI_KI: Final = 1.28
+# Predictive controller model and tuning (validate against physical runs).
+# At 0.5 s per step this predicts 37.5 s, about 1.5 times the slow model time
+# constant near a 10 cm lower-tank setpoint.
+MPC_HORIZON_STEPS: Final = 75
+MPC_MOVE_WEIGHT: Final = 0.1
+MPC_INTEGRAL_GAIN: Final = 0.010
+# Bound accumulated tracking error to prevent delayed-plant integral windup.
+MPC_INTEGRAL_LIMIT_M_S: Final = 1.0
+MPC_RATE_LIMIT_V_S: Final = 1.0
+MPC_PROCESS_NOISE_VARIANCE_M2: Final = 1e-6
+MPC_SENSOR_NOISE_VARIANCE_M2: Final = 1e-5
 # Lowest PI output; below ~1.56 V the pump lifts no water.
 PI_MIN_V: Final = 1.5
 # Median window against single sensor spikes [samples].
 LEVEL_MEDIAN_SAMPLES: Final = 5
 # Invalid level readings in a row before the run stops.
 MAX_INVALID_SAMPLES: Final = 5
+# Time horizon for projecting a rising lower-tank level to the warning threshold.
+LEVEL_PREDICTION_HORIZON_S: Final = 10.0
 
 # safety limits
 # Allowed desired level of the lower tank [cm].

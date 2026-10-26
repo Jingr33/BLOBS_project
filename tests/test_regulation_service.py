@@ -3,7 +3,14 @@ from pathlib import Path
 import pytest
 
 from blobs_project import config
-from blobs_project.backend.hardware import SimulatedDAQ, Tower
+from blobs_project.backend.hardware import (
+    PlantParams as SimulatedPlantParams,
+)
+from blobs_project.backend.hardware import (
+    SimulatedDAQ,
+    Tower,
+    TowerCalibration,
+)
 from blobs_project.backend.regulation import (
     ProfileLoader,
     ProfileRequiredError,
@@ -19,10 +26,17 @@ class FakeClock:
         return self.t
 
 
-def make_simulated_service() -> tuple[RegulationService, FakeClock]:
+def make_simulated_service(
+    noise_m: float = 0.0,
+) -> tuple[RegulationService, FakeClock]:
     """Return a service on the simulated tower driven by a fake clock."""
     clock = FakeClock()
-    return RegulationService(tower=Tower(SimulatedDAQ(clock=clock))), clock
+    daq = SimulatedDAQ(
+        params=SimulatedPlantParams(noise_m=noise_m),
+        clock=clock,
+    )
+    tower = Tower(daq, TowerCalibration(offset_cm=0.0))
+    return RegulationService(tower=tower), clock
 
 
 def run(service: RegulationService, clock: FakeClock, seconds: float) -> None:
@@ -56,8 +70,7 @@ def test_self_driven_replaces_manual_regulation(tmp_path: Path) -> None:
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n21.0\n", encoding="utf-8")
     regulation_service = RegulationService()
-    regulation_service.set_step_s(1.0)
-    regulation_service.set_profile(ProfileLoader.load_profile(path))
+    regulation_service.set_profile(ProfileLoader.load_profile(path).with_step(1.0))
     regulation_service.toggle_regulation()
 
     regulation_service.toggle_self_driven()
@@ -70,8 +83,7 @@ def test_self_driven_stops_when_profile_finishes(tmp_path: Path) -> None:
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n20.0\n20.0\n", encoding="utf-8")
     regulation_service = RegulationService()
-    regulation_service.set_step_s(1.0)
-    regulation_service.set_profile(ProfileLoader.load_profile(path))
+    regulation_service.set_profile(ProfileLoader.load_profile(path).with_step(1.0))
     regulation_service.toggle_self_driven()
 
     for _ in range(40):
@@ -95,7 +107,7 @@ def test_desired_setpoint_is_clamped_to_tank_range() -> None:
 
 
 def test_regulation_holds_the_simulated_tower_at_the_setpoint() -> None:
-    """The PI brings the simulated lower tank to the setpoint within 1 mm."""
+    """The default MPC brings the simulated lower tank to its setpoint."""
     service, clock = make_simulated_service()
     service.regulation_values.tank2_desired_cm = 10.0
     service.toggle_regulation()
@@ -104,6 +116,49 @@ def test_regulation_holds_the_simulated_tower_at_the_setpoint() -> None:
 
     assert service.regulation_values.tank2_actual_cm == pytest.approx(10.0, abs=0.1)
     assert 2.0 < service.tower.pump_voltage < 7.5
+
+
+def test_mpc_tracks_maximum_setpoint_without_reaching_the_trip_level() -> None:
+    service, clock = make_simulated_service()
+    service.regulation_values.tank2_desired_cm = config.SETPOINT_MAX_CM
+    service.toggle_regulation()
+    levels = []
+
+    for _ in range(round(600.0 / 0.1)):
+        clock.t += 0.1
+        service.tick(0.1)
+        levels.append(service.regulation_values.tank2_actual_cm)
+
+    assert service.is_running
+    assert service.fault is None
+    assert max(levels) < config.LEVEL_TRIP_CM
+    assert service.regulation_values.tank2_actual_cm == pytest.approx(
+        config.SETPOINT_MAX_CM, abs=0.3
+    )
+
+
+def test_mpc_handles_noisy_live_setpoint_change() -> None:
+    service, clock = make_simulated_service(noise_m=0.0005)
+    service.regulation_values.tank2_desired_cm = 10.0
+    service.toggle_regulation()
+
+    run(service, clock, 180.0)
+    assert service.is_running
+    assert service.fault is None
+    service.regulation_values.tank2_desired_cm = 20.0
+    levels = []
+    voltages = []
+    for _ in range(round(600.0 / 0.1)):
+        clock.t += 0.1
+        service.tick(0.1)
+        levels.append(service.regulation_values.tank2_actual_cm)
+        voltages.append(service.tower.pump_voltage)
+
+    assert service.is_running
+    assert service.fault is None
+    assert max(levels) < config.LEVEL_TRIP_CM
+    assert all(0.0 <= voltage <= config.TOWER_PUMP_MAX_V for voltage in voltages)
+    assert service.regulation_values.tank2_actual_cm == pytest.approx(20.0, abs=0.3)
 
 
 def test_trend_points_expose_recorded_samples() -> None:
@@ -158,8 +213,7 @@ def test_remaining_time_counts_down_only_in_self_driven_mode(tmp_path: Path) -> 
     path = tmp_path / "profile.csv"
     path.write_text("20.0\n21.0\n22.0\n", encoding="utf-8")
     regulation_service = RegulationService()
-    regulation_service.set_step_s(1.0)
-    regulation_service.set_profile(ProfileLoader.load_profile(path))
+    regulation_service.set_profile(ProfileLoader.load_profile(path).with_step(1.0))
 
     assert regulation_service.remaining_s is None
 
@@ -179,8 +233,7 @@ def test_self_driven_desired_line_covers_the_whole_profile_from_the_start(
     path = tmp_path / "profile.csv"
     path.write_text("5.0\n10.0\n15.0\n20.0\n", encoding="utf-8")
     regulation_service = RegulationService()
-    regulation_service.set_step_s(1.0)
-    regulation_service.set_profile(ProfileLoader.load_profile(path))
+    regulation_service.set_profile(ProfileLoader.load_profile(path).with_step(1.0))
     regulation_service.toggle_self_driven()
     regulation_service.tick(0.1)
 

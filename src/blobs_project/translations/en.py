@@ -18,7 +18,7 @@ STRINGS: Final[dict[str, str]] = {
     "status.history_loaded": "Recorded run loaded ({minutes:.1f} min)",
     "status.history_running": "Stop the regulation before loading a recorded run",
     "status.profile_required": "Import a profile before automatic regulation",
-    "status.profile_invalid": "CSV file could not be read",
+    "status.profile_invalid": "CSV import failed: {reason}",
     "status.export_ready": "CSV data and statistics exported",
     "status.export_missing": "No samples to export yet",
     "status.export_failed": "CSV data could not be written",
@@ -56,10 +56,11 @@ STRINGS: Final[dict[str, str]] = {
     "regulation.profile_missing": "No CSV profile loaded",
     "regulation.emergency_stop": "EMERGENCY STOP",
     "regulation.fault": "Stopped: {reason}",
-    "regulation.overflow_warning": "Warning: lower tank close to overflow",
+    "regulation.overflow_warning": (
+        "Warning: level is high or projected to reach {level:.1f} cm within 10 s"
+    ),
     "regulation.profile_loaded": "Profile: {rows} × {step:g} min = {total:g} min",
     "regulation.profile_step": "Step {step}/{rows}: {level:.1f} cm",
-    "regulation.step_duration": "Step duration [min]:",
     "tank.upper_label": "T1 (upper)",
     "tank.lower_label": "T2 (lower)",
     "common.value_cm": "{value} cm",
