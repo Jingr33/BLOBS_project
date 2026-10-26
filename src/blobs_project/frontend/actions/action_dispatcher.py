@@ -25,7 +25,6 @@ class ActionDispatcher:
         self._regulation_service = regulation_service
         self._csv_service = csv_service
         self._handlers: dict[ActionId, Callable[[QWidget], str | None]] = {
-            ActionId.FORCE_RESET: self._force_reset,
             ActionId.IMPORT_CSV: self._import_csv,
             ActionId.EXPORT_CSV: self._export_csv,
             ActionId.DOWNLOAD_CSV_TEMPLATE: self._download_template,
@@ -37,10 +36,6 @@ class ActionDispatcher:
         if handler is None:
             return None
         return handler(parent)
-
-    def _force_reset(self, parent: QWidget) -> str | None:
-        self._regulation_service.force_reset()
-        return tr("status.force_reset")
 
     def _tare(self, parent: QWidget) -> str | None:
         try:

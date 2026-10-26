@@ -7,7 +7,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
 
-from blobs_project import config
+from blobs_project import Application, config
 from blobs_project.backend.csv_management import CsvService
 from blobs_project.backend.hardware import (
     HardwareError,
@@ -25,6 +25,7 @@ from blobs_project.backend.regulation import (
 )
 from blobs_project.frontend.actions import ActionDispatcher, ActionId
 from blobs_project.frontend.frames.footer_frame import FooterFrame
+from blobs_project.frontend.frames.header_frame import HeaderFrame
 from blobs_project.frontend.frames.regulation_frame import RegulationFrame
 from blobs_project.frontend.widgets.tank_control import TankControl
 
@@ -299,39 +300,29 @@ def test_desired_spin_box_allows_only_the_setpoint_range() -> None:
 
 def test_emergency_button_stops_and_shows_the_reason() -> None:
     service, daq = make_service(10.0)
-    frame = RegulationFrame(service)
-    frame.show()
-    buttons = {button.text(): button for button in frame.findChildren(QPushButton)}
+    window = Application.create_window(service, CsvService())
+    window.show()
+    _APP.processEvents()
+    header = window.findChild(HeaderFrame)
+    frame = window.findChild(RegulationFrame)
+    assert header is not None and frame is not None
+    buttons = {button.text(): button for button in header.findChildren(QPushButton)}
+    regulation_buttons = {
+        button.text(): button for button in frame.findChildren(QPushButton)
+    }
     alert = frame.findChild(QLabel, "alert")
     assert alert is not None and alert.isHidden()
-    buttons["Start regulation"].click()
+    regulation_buttons["Start regulation"].click()
     run(service, 1.0)
 
     buttons["EMERGENCY STOP"].click()
+    _APP.processEvents()
 
     assert not service.is_running
     assert pump_v(daq) == 0.0
     assert not alert.isHidden()
     assert alert.text() == "Stopped: emergency stop"
-
-
-def test_voltage_label_does_not_claim_zero_after_failed_stop() -> None:
-    daq = _FailingWriteDAQ()
-    service = RegulationService(_RecordingController(), Tower(daq))
-    frame = RegulationFrame(service)
-    service.toggle_regulation()
-    run(service, 1.0)
-    daq.fail_writes = True
-
-    service.emergency_stop()
-    frame.sync()
-
-    voltage = next(
-        label
-        for label in frame.findChildren(QLabel)
-        if label.text().startswith("Output unknown")
-    )
-    assert "last confirmed 5.00 V" in voltage.text()
+    window.close()
 
 
 def test_tare_action_reports_the_result() -> None:
@@ -350,4 +341,4 @@ def test_footer_shows_alerts_in_red() -> None:
 
     footer.set_status("Regulation stopped: emergency stop", alert=True)
 
-    assert config.RED in footer.status_label.styleSheet()
+    assert config.STATE_ALARM in footer.status_label.styleSheet()

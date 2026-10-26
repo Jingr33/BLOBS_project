@@ -11,17 +11,6 @@ from blobs_project.frontend.actions import ActionDispatcher, ActionId
 _APP = QApplication.instance() or QApplication([])
 
 
-def test_force_reset_action_stops_the_running_regulation() -> None:
-    regulation_service = RegulationService()
-    regulation_service.toggle_regulation()
-    dispatcher = ActionDispatcher(regulation_service, CsvService())
-
-    message = dispatcher.execute(ActionId.FORCE_RESET, QWidget())
-
-    assert message == "Regulation reset"
-    assert not regulation_service.regulation_active
-
-
 def test_import_action_shows_csv_validation_details(tmp_path, monkeypatch) -> None:
     path = tmp_path / "bad-profile.csv"
     path.write_text("hladina_cm\n10\nbad-value\n", encoding="utf-8")

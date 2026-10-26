@@ -5,11 +5,10 @@ from .action_place import ActionPlace
 from .header_action import HeaderAction
 
 HEADER_ACTIONS: Final[dict[ActionId, HeaderAction]] = {
-    ActionId.EXPORT_CSV: HeaderAction((ActionPlace.HEADER,)),
-    ActionId.FORCE_RESET: HeaderAction((ActionPlace.HEADER,)),
-    ActionId.IMPORT_CSV: HeaderAction((ActionPlace.REGULATION,)),
-    ActionId.DOWNLOAD_CSV_TEMPLATE: HeaderAction((ActionPlace.HEADER,)),
     ActionId.TARE: HeaderAction((ActionPlace.HEADER,)),
+    ActionId.EXPORT_CSV: HeaderAction((ActionPlace.SETTINGS,)),
+    ActionId.IMPORT_CSV: HeaderAction((ActionPlace.SETTINGS,)),
+    ActionId.DOWNLOAD_CSV_TEMPLATE: HeaderAction((ActionPlace.SETTINGS,)),
 }
 
 
