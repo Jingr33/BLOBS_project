@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout
 from blobs_project import config
 from blobs_project.backend.regulation import RegulationService
 from blobs_project.frontend.helpers.qt_helper import QtHelper
+from blobs_project.frontend.helpers.tare_prompt import TarePrompt
 from blobs_project.frontend.widgets.tank_control import TankControl
 from blobs_project.translations import tr
 
@@ -95,5 +96,9 @@ class RegulationFrame(QFrame):
         self._alert_label.setVisible(bool(text))
 
     def _toggle_regulation(self) -> None:
+        if not self._regulation_service.regulation_active and not TarePrompt.offer(
+            self, self._regulation_service
+        ):
+            return
         self._regulation_service.toggle_regulation()
         self.sync()

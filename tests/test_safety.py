@@ -5,7 +5,7 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
+from PyQt6.QtWidgets import QApplication, QLabel, QMessageBox, QPushButton
 
 from blobs_project import Application, config
 from blobs_project.backend.csv_management import CsvService
@@ -23,7 +23,6 @@ from blobs_project.backend.regulation import (
     RegulationControllerBase,
     RegulationService,
 )
-from blobs_project.frontend.actions import ActionDispatcher, ActionId
 from blobs_project.frontend.frames.footer_frame import FooterFrame
 from blobs_project.frontend.frames.header_frame import HeaderFrame
 from blobs_project.frontend.frames.regulation_frame import RegulationFrame
@@ -325,15 +324,48 @@ def test_emergency_button_stops_and_shows_the_reason() -> None:
     window.close()
 
 
-def test_tare_action_reports_the_result() -> None:
+def test_start_regulation_tares_when_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
     service, daq = make_service(0.0)
-    dispatcher = ActionDispatcher(service, CsvService())
+    daq.set_input_voltage(config.TOWER_LEVEL_CHANNEL, 0.3)
+    monkeypatch.setattr(
+        QMessageBox, "question", lambda *_: QMessageBox.StandardButton.Yes
+    )
+    frame = RegulationFrame(service)
 
-    assert dispatcher.execute(ActionId.TARE, QWidget()) is not None
-    service.toggle_regulation()
-    message = dispatcher.execute(ActionId.TARE, QWidget())
+    frame.findChildren(QPushButton)[0].click()
 
-    assert message == "Stop the regulation before zeroing the sensor"
+    assert service.regulation_active
+    assert service.tower.read_level_cm() == pytest.approx(config.TOWER_LEVEL_OFFSET_CM)
+
+
+def test_start_regulation_is_cancelled_from_the_tare_prompt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, _ = make_service(0.0)
+    monkeypatch.setattr(
+        QMessageBox, "question", lambda *_: QMessageBox.StandardButton.Cancel
+    )
+    frame = RegulationFrame(service)
+
+    frame.findChildren(QPushButton)[0].click()
+
+    assert not service.regulation_active
+
+
+def test_stop_regulation_does_not_offer_the_tare(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, _ = make_service(0.0)
+    frame = RegulationFrame(service)
+    button = frame.findChildren(QPushButton)[0]
+    button.click()
+    asked: list[object] = []
+    monkeypatch.setattr(QMessageBox, "question", lambda *a: asked.append(a))
+
+    button.click()
+
+    assert not service.regulation_active
+    assert asked == []
 
 
 def test_footer_shows_alerts_in_red() -> None:

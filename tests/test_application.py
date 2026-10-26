@@ -59,7 +59,7 @@ def test_main_window_composes_separate_frames() -> None:
     app.processEvents()
 
 
-def test_header_offers_tare_and_emergency_stop_with_the_clock_in_the_corner() -> None:
+def test_header_offers_emergency_stop_with_the_clock_in_the_corner() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
@@ -70,7 +70,7 @@ def test_header_offers_tare_and_emergency_stop_with_the_clock_in_the_corner() ->
 
     labels = [button.text() for button in header.findChildren(QPushButton)]
 
-    assert labels == ["Tare", "EMERGENCY STOP"]
+    assert labels == ["EMERGENCY STOP"]
 
     clock = header.findChild(ClockWidget)
     emergency = header.findChild(QPushButton, "emergency")
