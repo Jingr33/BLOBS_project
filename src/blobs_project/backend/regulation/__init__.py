@@ -1,5 +1,6 @@
 from .controllers import (
     ControllerError,
+    DiscretePlantModel,
     KalmanFilter,
     MPCController,
     MPCRegulationController,
@@ -20,6 +21,7 @@ __all__ = [
     "CsvExporter",
     "CsvProfile",
     "ControllerError",
+    "DiscretePlantModel",
     "KalmanFilter",
     "MPCController",
     "MPCRegulationController",

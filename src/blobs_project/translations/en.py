@@ -61,7 +61,6 @@ STRINGS: Final[dict[str, str]] = {
     ),
     "regulation.profile_loaded": "Profile: {rows} × {step:g} min = {total:g} min",
     "regulation.profile_step": "Step {step}/{rows}: {level:.1f} cm",
-    "regulation.step_duration": "Step duration [min]:",
     "tank.upper_label": "T1 (upper)",
     "tank.lower_label": "T2 (lower)",
     "common.value_cm": "{value} cm",

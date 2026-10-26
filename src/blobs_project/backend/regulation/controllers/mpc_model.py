@@ -47,6 +47,17 @@ class PlantParams:
             raise ValueError("plant pump limits are outside the approved range")
 
 
+@dataclass(frozen=True)
+class DiscretePlantModel:
+    """Discrete plant matrices and equilibrium values in SI units."""
+
+    Ad: FloatArray
+    Bd: FloatArray
+    Cd: FloatArray
+    h_H_eq_m: float
+    u_eq_v: float
+
+
 def outflow(level_m: float, coefficient: float) -> float:
     """Return tank outflow [m^3/s] at level ``level_m``."""
     return coefficient * math.sqrt(2.0 * GRAVITY_M_S2 * max(level_m, 0.0))
@@ -61,7 +72,7 @@ def pump_voltage_from_flow(flow_m3_s: float, params: PlantParams) -> float:
 
 def get_discrete_model(
     params: PlantParams, target_h_L_m: float, sample_period_s: float
-) -> tuple[FloatArray, FloatArray, FloatArray, float, float]:
+) -> DiscretePlantModel:
     """Linearize and discretize the cascade about a lower-tank target level.
 
     The measured output is lower-tank height in metres. The returned matrices
@@ -90,10 +101,10 @@ def get_discrete_model(
     C = np.asarray([[0.0, 1.0]], dtype=float)
     D = np.zeros((1, 1), dtype=float)
     Ad, Bd, Cd, _, _ = cont2discrete((A, B, C, D), sample_period_s, method="zoh")
-    return (
-        np.asarray(Ad, dtype=float),
-        np.asarray(Bd, dtype=float),
-        np.asarray(Cd, dtype=float),
-        h_H_eq,
-        u_eq,
+    return DiscretePlantModel(
+        Ad=np.asarray(Ad, dtype=float),
+        Bd=np.asarray(Bd, dtype=float),
+        Cd=np.asarray(Cd, dtype=float),
+        h_H_eq_m=h_H_eq,
+        u_eq_v=u_eq,
     )

@@ -192,11 +192,6 @@ class RegulationService:
     def set_profile(self, profile: CsvProfile | None) -> None:
         self._schedule.set_profile(profile)
 
-    def set_step_s(self, step_s: float) -> None:
-        """Hold each profile level for ``step_s``; ignored while a profile runs."""
-        if not self._self_driven_active:
-            self._schedule.set_step_s(step_s)
-
     def load_history(self, samples: Sequence[Sample]) -> None:
         """Show a recorded run in the chart and statistics.
 

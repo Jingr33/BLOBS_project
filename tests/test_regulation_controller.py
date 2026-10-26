@@ -6,6 +6,7 @@ import pytest
 from blobs_project import config
 from blobs_project.backend.hardware import HardwareError, MockDAQ, Tower
 from blobs_project.backend.regulation import (
+    ControllerError,
     KalmanFilter,
     MPCRegulationController,
     PIController,
@@ -102,17 +103,29 @@ def test_adapter_converts_cm_to_metres() -> None:
 
 
 def test_discrete_plant_model_has_finite_stable_state_matrices() -> None:
-    Ad, Bd, Cd, h_upper_eq, u_eq = get_discrete_model(
+    model = get_discrete_model(
         PlantParams(), target_h_L_m=0.1, sample_period_s=config.CONTROL_PERIOD_S
     )
 
-    assert Ad.shape == (2, 2)
-    assert Bd.shape == (2, 1)
-    assert Cd.tolist() == [[0.0, 1.0]]
-    assert math.isfinite(h_upper_eq) and 0 < h_upper_eq < PlantParams().H
-    assert 0 <= u_eq <= config.TOWER_PUMP_MAX_V
-    assert all(math.isfinite(float(value)) for value in Ad.flat)
-    assert all(math.isfinite(float(value)) for value in Bd.flat)
+    assert model.Ad.shape == (2, 2)
+    assert model.Bd.shape == (2, 1)
+    assert model.Cd.tolist() == [[0.0, 1.0]]
+    assert math.isfinite(model.h_H_eq_m) and 0 < model.h_H_eq_m < PlantParams().H
+    assert 0 <= model.u_eq_v <= config.TOWER_PUMP_MAX_V
+    assert all(math.isfinite(float(value)) for value in model.Ad.flat)
+    assert all(math.isfinite(float(value)) for value in model.Bd.flat)
+
+
+def test_mpc_horizon_covers_slow_model_dynamics_at_nominal_setpoint() -> None:
+    model = get_discrete_model(
+        PlantParams(), target_h_L_m=0.1, sample_period_s=config.CONTROL_PERIOD_S
+    )
+    slowest_eigenvalue = max(abs(value) for value in np.linalg.eigvals(model.Ad))
+    slow_time_constant_s = -config.CONTROL_PERIOD_S / math.log(slowest_eigenvalue)
+
+    assert config.MPC_HORIZON_STEPS * config.CONTROL_PERIOD_S >= (
+        1.4 * slow_time_constant_s
+    )
 
 
 @pytest.mark.parametrize("target_m", [0.0, -0.1, 0.28, math.nan, math.inf])
@@ -123,26 +136,26 @@ def test_discrete_plant_model_rejects_invalid_targets(target_m: float) -> None:
 
 def test_kalman_observer_estimates_the_unmeasured_upper_tank() -> None:
     params = PlantParams()
-    Ad, Bd, Cd, h_upper_eq, u_eq = get_discrete_model(params, 0.1, 0.5)
-    equilibrium = np.asarray([[h_upper_eq], [0.1]])
+    model = get_discrete_model(params, 0.1, 0.5)
+    equilibrium = np.asarray([[model.h_H_eq_m], [0.1]])
     observer = KalmanFilter(
-        Ad,
-        Bd,
-        Cd,
+        model.Ad,
+        model.Bd,
+        model.Cd,
         np.diag([1e-8, 1e-8]),
         np.asarray([[1e-8]]),
         equilibrium,
-        u_eq,
+        model.u_eq_v,
         params.H,
     )
     deviation = np.asarray([[0.01], [0.0]])
     estimate = equilibrium.flatten()
     for _ in range(60):
-        deviation = Ad @ deviation
+        deviation = model.Ad @ deviation
         measurement = float((equilibrium + deviation)[1, 0])
-        estimate = observer.update(u_eq, measurement)
+        estimate = observer.update(model.u_eq_v, measurement)
 
-    assert estimate[0] == pytest.approx(h_upper_eq + deviation[0, 0], abs=0.002)
+    assert estimate[0] == pytest.approx(model.h_H_eq_m + deviation[0, 0], abs=0.002)
 
 
 def test_mpc_command_respects_voltage_and_slew_constraints() -> None:
@@ -165,6 +178,20 @@ def test_mpc_resets_its_output_and_accepts_a_changed_target() -> None:
     command = controller.compute(0.5, 12.0, 10.0)
 
     assert 0.0 <= command <= config.MPC_RATE_LIMIT_V_S * 0.5
+
+
+def test_mpc_converts_observer_numerical_errors_to_controller_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    controller = MPCRegulationController()
+
+    def fail_to_configure(_target_m: float) -> None:
+        raise np.linalg.LinAlgError("singular covariance")
+
+    monkeypatch.setattr(controller, "_configure", fail_to_configure)
+
+    with pytest.raises(ControllerError, match="MPC controller update failed"):
+        controller.compute(0.5, 10.0, 0.0)
 
 
 def test_service_drives_the_pump_with_the_controller_output() -> None:
