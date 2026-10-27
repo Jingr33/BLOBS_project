@@ -27,6 +27,7 @@ from blobs_project.frontend.frames.footer_frame import FooterFrame
 from blobs_project.frontend.frames.header_frame import HeaderFrame
 from blobs_project.frontend.frames.regulation_frame import RegulationFrame
 from blobs_project.frontend.widgets.tank_control import TankControl
+from blobs_project.frontend.widgets.tare_prompt import TarePrompt
 
 _APP = QApplication.instance() or QApplication([])
 
@@ -328,7 +329,7 @@ def test_start_regulation_tares_when_accepted(monkeypatch: pytest.MonkeyPatch) -
     service, daq = make_service(0.0)
     daq.set_input_voltage(config.TOWER_LEVEL_CHANNEL, 0.3)
     monkeypatch.setattr(
-        QMessageBox, "question", lambda *_: QMessageBox.StandardButton.Yes
+        TarePrompt, "exec", lambda _: QMessageBox.StandardButton.Yes.value
     )
     frame = RegulationFrame(service)
 
@@ -343,7 +344,7 @@ def test_start_regulation_is_cancelled_from_the_tare_prompt(
 ) -> None:
     service, _ = make_service(0.0)
     monkeypatch.setattr(
-        QMessageBox, "question", lambda *_: QMessageBox.StandardButton.Cancel
+        TarePrompt, "exec", lambda _: QMessageBox.StandardButton.Cancel.value
     )
     frame = RegulationFrame(service)
 
@@ -360,7 +361,7 @@ def test_stop_regulation_does_not_offer_the_tare(
     button = frame.findChildren(QPushButton)[0]
     button.click()
     asked: list[object] = []
-    monkeypatch.setattr(QMessageBox, "question", lambda *a: asked.append(a))
+    monkeypatch.setattr(TarePrompt, "exec", lambda *a: asked.append(a))
 
     button.click()
 

@@ -5,7 +5,7 @@ from collections.abc import Callable
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import QCoreApplication
-from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton
+from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QWidget
 
 from blobs_project import Application
 from blobs_project.backend.csv_management import CsvService
@@ -138,12 +138,12 @@ def test_regulation_controls_live_on_overview_and_settings() -> None:
     automatic = window.findChild(AutomaticControls)
     assert regulation is not None and automatic is not None
 
-    assert [button.text() for button in regulation.findChildren(QPushButton)] == [
-        "Start regulation"
-    ]
-    assert [button.text() for button in automatic.findChildren(QPushButton)] == [
-        "Start automatic regulation"
-    ]
+    def labels(widget: QWidget) -> list[str]:
+        buttons = widget.findChildren(QPushButton)
+        return [button.text() for button in buttons if button.window() is window]
+
+    assert labels(regulation) == ["Start regulation"]
+    assert labels(automatic) == ["Start automatic regulation"]
 
     window.close()
     app.processEvents()
