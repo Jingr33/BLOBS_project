@@ -6,7 +6,6 @@ from pathlib import Path
 from PyQt6.QtWidgets import QFileDialog, QWidget
 
 from blobs_project.backend.csv_management import CsvService
-from blobs_project.backend.hardware import HardwareError
 from blobs_project.backend.regulation import (
     CsvError,
     CsvProfile,
@@ -28,7 +27,6 @@ class ActionDispatcher:
             ActionId.IMPORT_CSV: self._import_csv,
             ActionId.EXPORT_CSV: self._export_csv,
             ActionId.DOWNLOAD_CSV_TEMPLATE: self._download_template,
-            ActionId.TARE: self._tare,
         }
 
     def execute(self, action_id: ActionId, parent: QWidget) -> str | None:
@@ -36,15 +34,6 @@ class ActionDispatcher:
         if handler is None:
             return None
         return handler(parent)
-
-    def _tare(self, parent: QWidget) -> str | None:
-        try:
-            zero_v = self._regulation_service.tare()
-        except RuntimeError:
-            return tr("status.tare_running")
-        except HardwareError as error:
-            return tr("status.tare_failed", reason=error)
-        return tr("status.tare_done", zero=zero_v)
 
     def _import_csv(self, parent: QWidget) -> str | None:
         path, _ = QFileDialog.getOpenFileName(

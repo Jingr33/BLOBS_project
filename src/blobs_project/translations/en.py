@@ -7,7 +7,6 @@ STRINGS: Final[dict[str, str]] = {
     "action.import_csv": "Import CSV data",
     "action.export_csv": "Export CSV data",
     "action.download_template": "Download CSV template",
-    "action.tare": "Tare",
     "status.ready": "Ready for preview",
     "status.regulation_running": "Regulation running",
     "status.regulation_stopped": "Regulation stopped",
@@ -24,8 +23,6 @@ STRINGS: Final[dict[str, str]] = {
     "status.export_failed": "CSV data could not be written",
     "status.template_saved": "CSV template saved",
     "status.fault": "Regulation stopped: {reason}",
-    "status.tare_done": "Level sensor zeroed at {zero:.3f} V",
-    "status.tare_running": "Stop the regulation before zeroing the sensor",
     "status.tare_failed": "Sensor could not be zeroed: {reason}",
     "nav.overview": "Overview",
     "nav.chart": "Chart",
@@ -87,6 +84,10 @@ STRINGS: Final[dict[str, str]] = {
     "dialog.export_title": "Export regulation samples",
     "dialog.csv_filter": "CSV files (*.csv)",
     "dialog.template_title": "Download CSV template",
+    "dialog.tare_title": "Zero the level sensor",
+    "dialog.tare_question": (
+        "Zero the level sensor before starting? Only do this with an empty tank."
+    ),
     "alerts.title": "Event log",
     "alerts.time": "Time",
     "alerts.message": "Event",

@@ -11,8 +11,8 @@ def test_every_action_is_registered() -> None:
     assert set(HEADER_ACTIONS) == set(ActionId)
 
 
-def test_header_offers_only_the_sensor_tare() -> None:
-    assert list(visible_actions(ActionPlace.HEADER)) == [ActionId.TARE]
+def test_header_offers_no_actions() -> None:
+    assert list(visible_actions(ActionPlace.HEADER)) == []
 
 
 def test_settings_offer_csv_management() -> None:

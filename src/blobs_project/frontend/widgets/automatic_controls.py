@@ -9,6 +9,7 @@ from blobs_project.backend.regulation import (
     RegulationService,
 )
 from blobs_project.frontend.helpers.qt_helper import QtHelper
+from blobs_project.frontend.widgets.tare_prompt import TarePrompt
 from blobs_project.translations import tr
 
 
@@ -21,6 +22,7 @@ class AutomaticControls(QWidget):
         super().__init__()
         self._regulation_service = regulation_service
         self._build_ui()
+        self._tare_prompt = TarePrompt(regulation_service, self)
         self.sync()
 
     def _build_ui(self) -> None:
@@ -68,6 +70,13 @@ class AutomaticControls(QWidget):
         self._profile_label.setText(text)
 
     def _toggle_automatic(self) -> None:
+        regulation_service = self._regulation_service
+        if (
+            not regulation_service.self_driven_active
+            and regulation_service.profile is not None
+            and not self._tare_prompt.confirm()
+        ):
+            return
         try:
             self._regulation_service.toggle_self_driven()
         except ProfileRequiredError:

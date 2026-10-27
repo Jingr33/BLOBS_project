@@ -5,7 +5,7 @@ from collections.abc import Callable
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import QCoreApplication
-from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton
+from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QWidget
 
 from blobs_project import Application
 from blobs_project.backend.csv_management import CsvService
@@ -59,7 +59,7 @@ def test_main_window_composes_separate_frames() -> None:
     app.processEvents()
 
 
-def test_header_offers_tare_and_emergency_stop_with_the_clock_in_the_corner() -> None:
+def test_header_offers_emergency_stop_with_the_clock_in_the_corner() -> None:
     app = QApplication.instance() or QApplication([])
 
     window = Application.create_window(RegulationService(), CsvService())
@@ -70,7 +70,7 @@ def test_header_offers_tare_and_emergency_stop_with_the_clock_in_the_corner() ->
 
     labels = [button.text() for button in header.findChildren(QPushButton)]
 
-    assert labels == ["Tare", "EMERGENCY STOP"]
+    assert labels == ["EMERGENCY STOP"]
 
     clock = header.findChild(ClockWidget)
     emergency = header.findChild(QPushButton, "emergency")
@@ -138,12 +138,12 @@ def test_regulation_controls_live_on_overview_and_settings() -> None:
     automatic = window.findChild(AutomaticControls)
     assert regulation is not None and automatic is not None
 
-    assert [button.text() for button in regulation.findChildren(QPushButton)] == [
-        "Start regulation"
-    ]
-    assert [button.text() for button in automatic.findChildren(QPushButton)] == [
-        "Start automatic regulation"
-    ]
+    def labels(widget: QWidget) -> list[str]:
+        buttons = widget.findChildren(QPushButton)
+        return [button.text() for button in buttons if button.window() is window]
+
+    assert labels(regulation) == ["Start regulation"]
+    assert labels(automatic) == ["Start automatic regulation"]
 
     window.close()
     app.processEvents()
