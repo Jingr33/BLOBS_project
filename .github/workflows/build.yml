@@ -45,15 +45,15 @@ jobs:
         run: |
           uv run --with pyinstaller `
             pyinstaller `
-            --noconfirm --clean --onefile --noconsole `
+            --noconfirm --clean --onedir --noconsole `
             --name Blobs `
             --collect-all nidaqmx `
             main.py
 
-      - name: Upload EXE as artifact
+      - name: Upload application bundle as artifact
         uses: actions/upload-artifact@v4
         with:
           name: blobs-app-${{ github.sha }}
-          path: dist/Blobs.exe
+          path: dist/Blobs/
           if-no-files-found: error
           retention-days: 20
