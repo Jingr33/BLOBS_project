@@ -45,7 +45,7 @@ jobs:
         run: |
           uv run --with pyinstaller `
             pyinstaller `
-            --noconfirm --clean --onefile --noconsole `
+            --noconfirm --clean --onedir --noconsole `
             --name Blobs `
             --collect-all nidaqmx `
             main.py
