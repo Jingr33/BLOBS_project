@@ -47,6 +47,9 @@ class VisualizationFrame(QFrame):
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
         self._trend_preview = TrendPreview()
+        self._trend_preview.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
         self._statistics_view = StatisticsView()
         self._alert_log_view = AlertLogView()
         self._regulation_frame = regulation_frame
