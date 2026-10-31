@@ -5,7 +5,14 @@ from collections.abc import Callable
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import QCoreApplication
-from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QWidget
+from PyQt6.QtWidgets import (
+    QApplication,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QStackedWidget,
+    QWidget,
+)
 
 from blobs_project import Application
 from blobs_project.backend.csv_management import CsvService
@@ -108,6 +115,77 @@ def test_visualization_frame_switches_between_pages() -> None:
         "Alerts",
         "Settings",
     ]
+
+    window.close()
+    app.processEvents()
+
+
+def test_visualization_pages_pad_content_without_moving_tables() -> None:
+    app = QApplication.instance() or QApplication([])
+    window = Application.create_window(RegulationService(), CsvService())
+    frame = window.findChild(VisualizationFrame)
+    assert frame is not None
+    stack = frame.findChild(QStackedWidget)
+    assert stack is not None
+
+    for page_index in (0, 1, 4):
+        page = stack.widget(page_index)
+        assert page is not None
+        page_layout = page.layout()
+        assert page_layout is not None
+        margins = page_layout.contentsMargins()
+        assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (
+            16,
+            12,
+            16,
+            12,
+        )
+
+    statistics = stack.widget(2)
+    assert statistics is not None
+    summary = statistics.findChild(QWidget, "statisticsSummary")
+    assert summary is not None
+    summary_layout = summary.layout()
+    assert summary_layout is not None
+    summary_margins = summary_layout.contentsMargins()
+    assert (
+        summary_margins.left(),
+        summary_margins.top(),
+        summary_margins.right(),
+        summary_margins.bottom(),
+    ) == (12, 8, 12, 0)
+    statistics_layout = statistics.layout()
+    assert statistics_layout is not None
+    statistics_margins = statistics_layout.contentsMargins()
+    assert (
+        statistics_margins.left(),
+        statistics_margins.top(),
+        statistics_margins.right(),
+        statistics_margins.bottom(),
+    ) == (4, 4, 4, 4)
+
+    alerts = stack.widget(3)
+    assert alerts is not None
+    title = alerts.findChild(QWidget, "alertTitle")
+    assert title is not None
+    title_layout = title.layout()
+    assert title_layout is not None
+    title_margins = title_layout.contentsMargins()
+    assert (
+        title_margins.left(),
+        title_margins.top(),
+        title_margins.right(),
+        title_margins.bottom(),
+    ) == (12, 8, 12, 0)
+    alerts_layout = alerts.layout()
+    assert alerts_layout is not None
+    alerts_margins = alerts_layout.contentsMargins()
+    assert (
+        alerts_margins.left(),
+        alerts_margins.top(),
+        alerts_margins.right(),
+        alerts_margins.bottom(),
+    ) == (4, 4, 4, 4)
 
     window.close()
     app.processEvents()
