@@ -130,8 +130,10 @@ def test_visualization_pages_pad_content_without_moving_tables() -> None:
 
     for page_index in (0, 1, 4):
         page = stack.widget(page_index)
-        assert page.layout() is not None
-        margins = page.layout().contentsMargins()
+        assert page is not None
+        page_layout = page.layout()
+        assert page_layout is not None
+        margins = page_layout.contentsMargins()
         assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (
             16,
             12,
@@ -140,16 +142,21 @@ def test_visualization_pages_pad_content_without_moving_tables() -> None:
         )
 
     statistics = stack.widget(2)
+    assert statistics is not None
     summary = statistics.findChild(QWidget, "statisticsSummary")
-    assert summary is not None and summary.layout() is not None
-    summary_margins = summary.layout().contentsMargins()
+    assert summary is not None
+    summary_layout = summary.layout()
+    assert summary_layout is not None
+    summary_margins = summary_layout.contentsMargins()
     assert (
         summary_margins.left(),
         summary_margins.top(),
         summary_margins.right(),
         summary_margins.bottom(),
     ) == (12, 8, 12, 0)
-    statistics_margins = statistics.layout().contentsMargins()
+    statistics_layout = statistics.layout()
+    assert statistics_layout is not None
+    statistics_margins = statistics_layout.contentsMargins()
     assert (
         statistics_margins.left(),
         statistics_margins.top(),
@@ -158,16 +165,21 @@ def test_visualization_pages_pad_content_without_moving_tables() -> None:
     ) == (4, 4, 4, 4)
 
     alerts = stack.widget(3)
+    assert alerts is not None
     title = alerts.findChild(QWidget, "alertTitle")
-    assert title is not None and title.layout() is not None
-    title_margins = title.layout().contentsMargins()
+    assert title is not None
+    title_layout = title.layout()
+    assert title_layout is not None
+    title_margins = title_layout.contentsMargins()
     assert (
         title_margins.left(),
         title_margins.top(),
         title_margins.right(),
         title_margins.bottom(),
     ) == (12, 8, 12, 0)
-    alerts_margins = alerts.layout().contentsMargins()
+    alerts_layout = alerts.layout()
+    assert alerts_layout is not None
+    alerts_margins = alerts_layout.contentsMargins()
     assert (
         alerts_margins.left(),
         alerts_margins.top(),
