@@ -5,7 +5,14 @@ from collections.abc import Callable
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import QCoreApplication
-from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QWidget
+from PyQt6.QtWidgets import (
+    QApplication,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QStackedWidget,
+    QWidget,
+)
 
 from blobs_project import Application
 from blobs_project.backend.csv_management import CsvService
@@ -108,6 +115,65 @@ def test_visualization_frame_switches_between_pages() -> None:
         "Alerts",
         "Settings",
     ]
+
+    window.close()
+    app.processEvents()
+
+
+def test_visualization_pages_pad_content_without_moving_tables() -> None:
+    app = QApplication.instance() or QApplication([])
+    window = Application.create_window(RegulationService(), CsvService())
+    frame = window.findChild(VisualizationFrame)
+    assert frame is not None
+    stack = frame.findChild(QStackedWidget)
+    assert stack is not None
+
+    for page_index in (0, 1, 4):
+        page = stack.widget(page_index)
+        assert page.layout() is not None
+        margins = page.layout().contentsMargins()
+        assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (
+            16,
+            12,
+            16,
+            12,
+        )
+
+    statistics = stack.widget(2)
+    summary = statistics.findChild(QWidget, "statisticsSummary")
+    assert summary is not None and summary.layout() is not None
+    summary_margins = summary.layout().contentsMargins()
+    assert (
+        summary_margins.left(),
+        summary_margins.top(),
+        summary_margins.right(),
+        summary_margins.bottom(),
+    ) == (12, 8, 12, 0)
+    statistics_margins = statistics.layout().contentsMargins()
+    assert (
+        statistics_margins.left(),
+        statistics_margins.top(),
+        statistics_margins.right(),
+        statistics_margins.bottom(),
+    ) == (4, 4, 4, 4)
+
+    alerts = stack.widget(3)
+    title = alerts.findChild(QWidget, "alertTitle")
+    assert title is not None and title.layout() is not None
+    title_margins = title.layout().contentsMargins()
+    assert (
+        title_margins.left(),
+        title_margins.top(),
+        title_margins.right(),
+        title_margins.bottom(),
+    ) == (12, 8, 12, 0)
+    alerts_margins = alerts.layout().contentsMargins()
+    assert (
+        alerts_margins.left(),
+        alerts_margins.top(),
+        alerts_margins.right(),
+        alerts_margins.bottom(),
+    ) == (4, 4, 4, 4)
 
     window.close()
     app.processEvents()

@@ -29,6 +29,7 @@ NAV_PAGES = (
     "nav.alerts",
     "nav.settings",
 )
+PAGE_CONTENT_MARGINS = (16, 12, 16, 12)
 
 
 class VisualizationFrame(QFrame):
@@ -59,7 +60,7 @@ class VisualizationFrame(QFrame):
         layout.addLayout(self._build_nav_bar())
         layout.addWidget(self._stack, 1)
         self._add_page(self._build_overview_page())
-        self._add_page(self._trend_preview)
+        self._add_page(self._build_padded_page(self._trend_preview))
         self._add_page(self._statistics_view)
         self._add_page(self._alert_log_view)
         self._add_page(self._build_settings_page())
@@ -90,7 +91,7 @@ class VisualizationFrame(QFrame):
     def _build_overview_page(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(*PAGE_CONTENT_MARGINS)
         layout.setSpacing(12)
         layout.addWidget(self._regulation_frame)
         diagrams = QHBoxLayout()
@@ -100,10 +101,17 @@ class VisualizationFrame(QFrame):
         layout.addLayout(diagrams, 1)
         return page
 
+    def _build_padded_page(self, content: QWidget) -> QWidget:
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(*PAGE_CONTENT_MARGINS)
+        layout.addWidget(content)
+        return page
+
     def _build_settings_page(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(*PAGE_CONTENT_MARGINS)
         layout.setSpacing(12)
         layout.addWidget(
             QtHelper.make_label(tr("settings.section_title"), "sectionTitle")
