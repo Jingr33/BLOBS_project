@@ -35,7 +35,12 @@ class StatisticsView(QWidget):
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(12)
+        layout.setSpacing(4)
+        summary = QWidget()
+        summary.setObjectName("statisticsSummary")
+        summary_layout = QVBoxLayout(summary)
+        summary_layout.setContentsMargins(12, 8, 12, 0)
+        summary_layout.setSpacing(12)
         grid = QGridLayout()
         grid.setHorizontalSpacing(24)
         self._duration_label = QtHelper.add_metric_row(
@@ -48,8 +53,11 @@ class StatisticsView(QWidget):
         self._efficiency_label = QtHelper.add_metric_row(
             grid, 3, tr("statistics.efficiency")
         )
-        layout.addLayout(grid)
-        layout.addWidget(QtHelper.make_label(tr("statistics.steps_title"), "muted"))
+        summary_layout.addLayout(grid)
+        summary_layout.addWidget(
+            QtHelper.make_label(tr("statistics.steps_title"), "muted")
+        )
+        layout.addWidget(summary)
         self._table = QTableWidget(0, len(STEP_COLUMNS))
         self._table.setHorizontalHeaderLabels([tr(key) for key in STEP_COLUMNS])
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
